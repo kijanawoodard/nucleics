@@ -11,7 +11,7 @@ Site for nuclear abundance advocacy. North star: **100 MWh of electricity per pe
 
 ## Deploy to Cloudflare Pages
 
-Settings: **Build command** `./build.sh` (or `build.sh`; the executable bit is committed; `bash build.sh` also works) ·
+Settings: **Build command** `./build.sh` (exec bit 100755 is committed; `bash build.sh` also works; a *bare* `build.sh` does NOT work: the current directory is not on PATH, so the shell answers `not found`, exit 127) ·
 **Build output directory** `output` · production branch `main` · root directory `/`. Then attach custom domain `nucleics.org`.
 `build.sh` downloads the pinned .NET SDK at build time (see "Cloudflare Pages (build.sh)" below).
 
@@ -97,7 +97,7 @@ or a page that references a dropped asset. Dangling internal links fail **`check
 
 ### Cloudflare Pages (build.sh)
 
-Cloudflare Pages settings: **Build command** `./build.sh` or `build.sh` (mode 100755 is committed; `bash build.sh` is equivalent) · **Build output directory** `output` · root directory `/`.
+Cloudflare Pages settings: **Build command** `./build.sh` (mode 100755 is committed; `bash build.sh` is equivalent; not bare `build.sh`) · **Build output directory** `output` · root directory `/`.
 `build.sh` (POSIX `sh`, `set -e`) downloads `dotnet-install.sh`, installs the exact pinned SDK (`--version 11.0.100-rc.1.26425.128`, not a channel)
 into `./dotnet`, and runs only `./dotnet/dotnet run --project src/Nucleics.Web -c Release -- export`.
 The build image needs `curl`, `tar`/`gzip` and a shell; nothing else (no global dotnet, no Node, no libicu: `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`).
