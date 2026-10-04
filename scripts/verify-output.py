@@ -80,6 +80,42 @@ for page in pages:
         absu = absu.split("#")[0]
         results.append((rel, absu, f"{tag}[{attr}]", get(absu)))
 
+# --- icons: /favicon.ico must exist unfingerprinted with an icon content type; every icon <link> in every page must resolve to an image ---
+ICON_TYPES = {"image/x-icon", "image/vnd.microsoft.icon"}   # python http.server says one of these; Cloudflare Pages serves .ico as image/x-icon
+icon_problems = []
+def fetch(url):
+    try:
+        with urllib.request.urlopen(url, timeout=10) as r: return r.status, r.headers.get_content_type(), r.read()
+    except urllib.error.HTTPError as e: return e.code, "", b""
+    except Exception as e: return f"ERR {e}", "", b""
+code, ctype, body = fetch(origin + "/favicon.ico")
+print(f"/favicon.ico -> {code} content-type={ctype} size={len(body)}B")
+if code != 200: icon_problems.append(f"/favicon.ico returned {code}")
+if ctype not in ICON_TYPES: icon_problems.append(f"/favicon.ico content-type {ctype!r} not in {sorted(ICON_TYPES)}")
+if body[:4] != b"\x00\x00\x01\x00": icon_problems.append("/favicon.ico is not an ICO file (bad magic bytes)")
+else:
+    n = int.from_bytes(body[4:6], "little"); sizes = sorted((body[6 + 16 * i] or 256) for i in range(n))
+    print(f"/favicon.ico frames: {sizes}")
+    if sizes != [16, 32, 48]: icon_problems.append(f"/favicon.ico frames {sizes} != [16, 32, 48]")
+src_ico = Path(__file__).resolve().parent.parent / "src/Nucleics.Web/wwwroot/favicon.ico"
+if src_ico.exists() and src_ico.read_bytes() != body: icon_problems.append("/favicon.ico differs from src/Nucleics.Web/wwwroot/favicon.ico")
+class IconLinks(HTMLParser):
+    def __init__(self): super().__init__(); self.links = []
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "link" and a.get("href") and {"icon", "apple-touch-icon"} & set((a.get("rel") or "").lower().split()): self.links.append(a)
+for page in pages:
+    il = IconLinks(); il.feed(page.read_text(encoding="utf-8")); rel = "/" + page.relative_to(root).as_posix()
+    served = rel[:-len("index.html")] if rel.endswith("/index.html") else rel
+    base = origin + served
+    if not any(l["href"] == "/favicon.ico" for l in il.links): icon_problems.append(f"{rel}: no <link rel=icon href=/favicon.ico>")
+    if not any((l.get("rel") or "").lower() == "apple-touch-icon" for l in il.links): icon_problems.append(f"{rel}: no apple-touch-icon link")
+    for l in il.links:
+        c, t, _ = fetch(urllib.parse.urljoin(base, l["href"]))
+        print(f"  icon link in {rel}: rel={l.get('rel')} href={l['href']} -> {c} {t}")
+        if c != 200 or not t.startswith("image/"): icon_problems.append(f"{rel}: icon {l['href']} -> {c} {t!r}")
+for pr in icon_problems: print("  FAIL", pr)
+
 bad = [r for r in results if r[3] != 200]
 uniq = {r[1] for r in results}
 print(f"served {root} via python http.server on {origin}")
@@ -89,5 +125,6 @@ print(f"references checked: {len(results)} ({len(uniq)} unique URLs); skipped ex
 print(f"HTTP 200: {len(results) - len(bad)}   NOT 200: {len(bad)}")
 for rel, u, kind, code in bad: print(f"  FAIL {code}  {kind}  {u}   (in {rel})")
 for rel, u in sorted(set(skipped)): print(f"  skipped external {u} (in {rel})")
-print("RESULT:", "PASS" if not bad else "FAIL")
-srv.shutdown(); sys.exit(1 if bad else 0)
+bad_all = bad or icon_problems
+print("RESULT:", "PASS" if not bad_all else "FAIL")
+srv.shutdown(); sys.exit(1 if bad_all else 0)

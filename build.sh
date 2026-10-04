@@ -80,7 +80,7 @@ rm -rf output
 # --- 3. belt and braces: the export must have produced these, or the build fails --------------------------------------------
 STEP="verify output"
 echo "== [3/3] $STEP =="
-for f in output/index.html output/404.html output/sitemap.xml output/robots.txt; do
+for f in output/index.html output/404.html output/sitemap.xml output/robots.txt output/favicon.ico; do
   [ -s "$f" ] || { echo "build.sh: missing required output file: $f" >&2; exit 1; }
 done
 STEP="done"

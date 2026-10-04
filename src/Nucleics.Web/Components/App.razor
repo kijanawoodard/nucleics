@@ -7,6 +7,13 @@
     <BasePath />
     <link rel="icon" type="image/png" sizes="32x32" href="@Assets["assets/favicon-32.png"]" />
     <link rel="icon" type="image/png" sizes="64x64" href="@Assets["assets/favicon-64.png"]" />
+    @* Added to the original two PNG icons (kept as they were): /favicon.ico is deliberately NOT fingerprinted (crawlers and old browsers
+       request that exact path; MapStaticAssets also serves the plain name, so the exporter ships output/favicon.ico), SVG icons for modern
+       browsers (dark variant by media query), and the iOS home-screen icon. See README "Favicon". *@
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="@Assets["assets/mark.svg"]" />
+    <link rel="icon" type="image/svg+xml" href="@Assets["assets/mark-dark.svg"]" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" sizes="180x180" href="@Assets["assets/apple-touch-icon.png"]" />
     <link rel="stylesheet" href="@Assets["styles.css"]" />
     @* No JS ships, so no importmap (it would name _framework/blazor.*.js). `-- export --keep-framework` brings both back. *@
     @if (StaticSite.KeepFramework)
