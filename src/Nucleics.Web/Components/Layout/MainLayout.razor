@@ -1,0 +1,27 @@
+@inherits LayoutComponentBase
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+    <a class="brand" href="/">
+        <img class="mark mark-light" src="@Assets["assets/mark.svg"]" width="72" height="72" alt=""
+             title="Seven shells; gaps mark uranium’s 92 electrons. Inbound neutron — controlled fission." />
+        <img class="mark mark-dark" src="@Assets["assets/mark-dark.svg"]" width="72" height="72" alt=""
+             title="Seven shells; gaps mark uranium’s 92 electrons. Inbound neutron — controlled fission." />
+        <span class="wordmark">Nucleics</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+        <a href="/learn/">Learn</a>
+        <a href="/about/">About</a>
+        <a href="/blog/">Blog</a>
+    </nav>
+</header>
+
+<main id="main">
+    @Body
+</main>
+
+<footer class="site-footer">
+    <span class="footer-brand">nucleics.org</span>
+    <span class="footer-tag">Abundance through fission</span>
+</footer>

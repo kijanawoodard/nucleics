@@ -1,0 +1,83 @@
+# all endpoints: 52
+C RouteEndpoint /  [/ (/)]
+- RouteEndpoint /_framework/opaque-redirect  [Blazor Opaque Redirection]
+C RouteEndpoint /about  [/about (/about)]
+C RouteEndpoint /learn  [/learn (/learn)]
+C RouteEndpoint /not-found  [/not-found (/not-found)]
+- RouteEndpoint _framework/blazor.server.f12kpep50j.js  []
+- RouteEndpoint _framework/blazor.server.f12kpep50j.js  []
+- RouteEndpoint _framework/blazor.server.f12kpep50j.js.gz  []
+- RouteEndpoint _framework/blazor.server.js  []
+- RouteEndpoint _framework/blazor.server.js  []
+- RouteEndpoint _framework/blazor.server.js.gz  []
+- RouteEndpoint _framework/blazor.server.js.map  []
+- RouteEndpoint _framework/blazor.server.js.map  []
+- RouteEndpoint _framework/blazor.server.js.map.gz  []
+- RouteEndpoint _framework/blazor.server.js.wwf6hnecpp.map  []
+- RouteEndpoint _framework/blazor.server.js.wwf6hnecpp.map  []
+- RouteEndpoint _framework/blazor.server.js.wwf6hnecpp.map.gz  []
+- RouteEndpoint _framework/blazor.web.ev8z2seuww.js  []
+- RouteEndpoint _framework/blazor.web.ev8z2seuww.js  []
+- RouteEndpoint _framework/blazor.web.ev8z2seuww.js.gz  []
+- RouteEndpoint _framework/blazor.web.js  []
+- RouteEndpoint _framework/blazor.web.js  []
+- RouteEndpoint _framework/blazor.web.js.gz  []
+- RouteEndpoint _framework/blazor.web.js.map  []
+- RouteEndpoint _framework/blazor.web.js.map  []
+- RouteEndpoint _framework/blazor.web.js.map.gz  []
+- RouteEndpoint _framework/blazor.web.js.mo39zegm9d.map  []
+- RouteEndpoint _framework/blazor.web.js.mo39zegm9d.map  []
+- RouteEndpoint _framework/blazor.web.js.mo39zegm9d.map.gz  []
+- RouteEndpoint assets/favicon-32.5twwwpzstz.png  []
+- RouteEndpoint assets/favicon-32.png  []
+- RouteEndpoint assets/favicon-64.png  []
+- RouteEndpoint assets/favicon-64.x1gg6tuh4n.png  []
+- RouteEndpoint assets/mark-dark.nn5sqjjzra.svg  []
+- RouteEndpoint assets/mark-dark.nn5sqjjzra.svg  []
+- RouteEndpoint assets/mark-dark.nn5sqjjzra.svg.gz  []
+- RouteEndpoint assets/mark-dark.svg  []
+- RouteEndpoint assets/mark-dark.svg  []
+- RouteEndpoint assets/mark-dark.svg.gz  []
+- RouteEndpoint assets/mark.14cadalewn.svg  []
+- RouteEndpoint assets/mark.14cadalewn.svg  []
+- RouteEndpoint assets/mark.14cadalewn.svg.gz  []
+- RouteEndpoint assets/mark.svg  []
+- RouteEndpoint assets/mark.svg  []
+- RouteEndpoint assets/mark.svg.gz  []
+- RouteEndpoint styles.css  []
+- RouteEndpoint styles.css  []
+- RouteEndpoint styles.css.gz  []
+- RouteEndpoint styles.w6sn8uuepi.css  []
+- RouteEndpoint styles.w6sn8uuepi.css  []
+- RouteEndpoint styles.w6sn8uuepi.css.gz  []
+- RouteEndpoint {**path:file}  [Fallback {**path:file}]
+
+# filtered (ComponentTypeMetadata present): 4 of 52
+  /                        -> Nucleics.Web.Components.Pages.Home
+  /about                   -> Nucleics.Web.Components.Pages.About
+  /learn                   -> Nucleics.Web.Components.Pages.Learn
+  /not-found               -> Nucleics.Web.Components.Pages.NotFound
+# without ComponentTypeMetadata: 48 (e.g. static assets, framework endpoints)
+  route: 48
+# metadata types on endpoints WITHOUT ComponentTypeMetadata (count of endpoints carrying each):
+   48  Microsoft.AspNetCore.Routing.HttpMethodMetadata
+   48  Microsoft.AspNetCore.Routing.RouteEndpointBuilder+RouteDiagnosticsMetadata
+   46  Microsoft.AspNetCore.StaticAssets.StaticAssetDescriptor
+   46  Microsoft.AspNetCore.StaticAssets.BuildAssetMetadata
+   14  Microsoft.AspNetCore.Routing.ContentEncodingMetadata
+    1  Microsoft.AspNetCore.Routing.FallbackMetadata
+    1  Microsoft.AspNetCore.Components.ResourceAssetCollection
+    1  Microsoft.AspNetCore.Components.Endpoints.ResourcePreloadCollection
+    1  Microsoft.AspNetCore.Components.ImportMapDefinition
+# metadata types on page endpoints:
+    4  Microsoft.AspNetCore.Antiforgery.RequireAntiforgeryTokenAttribute
+    4  Microsoft.AspNetCore.Routing.SuppressLinkGenerationMetadata
+    4  Microsoft.AspNetCore.Routing.HttpMethodMetadata
+    4  Microsoft.AspNetCore.Components.Endpoints.ComponentTypeMetadata
+    4  Microsoft.AspNetCore.Components.Endpoints.RootComponentMetadata
+    4  Microsoft.AspNetCore.Components.Endpoints.ConfiguredRenderModesMetadata
+    4  Microsoft.AspNetCore.Components.ResourceAssetCollection
+    4  Microsoft.AspNetCore.Components.Endpoints.ResourcePreloadCollection
+    4  Microsoft.AspNetCore.Components.ImportMapDefinition
+    4  Microsoft.AspNetCore.Routing.RouteEndpointBuilder+RouteDiagnosticsMetadata
+    1  Kaizen.StaticSite.ExcludeFromStaticExportAttribute

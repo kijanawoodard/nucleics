@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <!-- The site wires the three libraries together. The libraries do NOT reference each other. -->
+    <ProjectReference Include="..\Kaizen.StaticSite\Kaizen.StaticSite.csproj" />
+    <ProjectReference Include="..\Kaizen.BlogEngine\Kaizen.BlogEngine.csproj" />
+    <ProjectReference Include="..\Kaizen.Seo\Kaizen.Seo.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="content\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
