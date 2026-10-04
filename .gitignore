@@ -8,3 +8,6 @@ output/
 # build.sh (Cloudflare Pages) local SDK + installer
 dotnet/
 dotnet-install.sh
+.dotnet-home/
+.nuget/
+.home/
