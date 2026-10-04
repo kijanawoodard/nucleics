@@ -105,6 +105,13 @@ Captain decisions applied: Pages builds with `bash build.sh` (output dir `output
 - New `tests/Kaizen.StaticSite.Tests` (xunit 2.9, Microsoft.NET.Test.Sdk, references only `Kaizen.StaticSite`), added to `Nucleics.slnx`. `build.sh` runs `dotnet run --project src/Nucleics.Web`, which builds only the site and its three libraries, so tests are neither built nor needed on Cloudflare.
 - `build.sh` is committed as mode 100755; `./build.sh` runs directly.
 
+## Follow-up 2026-10-04 (c): original page folded into the Blazor site
+- `Home.razor` is generated from the original `<main>` content (copy, headings, sections, `id`s, classes, in-page links `#learn/#argue/#build` unchanged); `MainLayout` holds the original header/footer; `styles.css` and the four images are byte-identical copies in `wwwroot` (`cmp`). Original head had only charset, viewport, title, description, 2 favicons and the stylesheet (no OG/Twitter/theme-color/analytics/scripts/fonts), all preserved; `SeoHead` *adds* canonical, Open Graph, Twitter card and JSON-LD.
+- Header nav keeps Learn/Argue/Build (as `/#learn` etc. so they work from every page) and adds **About** and **Blog** (the only deliberate design change; two lines marked in `MainLayout.razor`).
+- Live nucleics.org (curl) is byte-identical to `main:index.html` (4506 B) and `main:styles.css`.
+- Verified with headless Chrome (screenshots in `/workspace/shots`, box-local): with the two extra nav links removed the export is **pixel-identical** to the original at 1280×1400 and 390×2200 (light scheme); with them, pixels differ only in the nav row. Token-level HTML diff (`compare.py`): body identical except `href="#x"` → `href="/#x"` in the nav, the added links, and Blazor writing `alt` without `=""`; head differs only by the added `<base>`, canonical, OG and Twitter tags. Dark scheme was not screenshot-verified (the headless flag did not switch scheme); the dark CSS rules and `mark-dark.svg` are byte-identical.
+- Root `index.html`, `styles.css`, `assets/` deleted; `_headers` kept.
+
 ## Open questions for the captain
 1. ~~Drop ImportMap/_framework~~ — decided: dropped by default, `--keep-framework` to override.
 2. ~~`_headers` passthrough~~ — done (repo-root `_headers`/`_redirects` copied as-is).

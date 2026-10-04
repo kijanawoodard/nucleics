@@ -6,8 +6,8 @@ Site for nuclear abundance advocacy. North star: **100 MWh of electricity per pe
 
 - Blazor SSR (.NET 11, no WASM, no interactive render modes, no AOT) exported to flat files in `output/`.
 - Hosted on Cloudflare Pages as static files; the build runs on Cloudflare via `build.sh`.
-- `index.html`, `styles.css` and `assets/` at the repo root are the original hand-written single page. They are kept for reference and are **no longer deployed**
-  (the site's copies live in `src/Nucleics.Web/wwwroot`).
+- The original single page (`index.html`, `styles.css`, `assets/`) now lives in the Blazor site: markup in `Components/Pages/Home.razor` + `Components/Layout/MainLayout.razor`,
+  CSS and images in `src/Nucleics.Web/wwwroot` (referenced with fingerprinted `@Assets[...]`). The exported home page is pixel-identical to the old one except for two extra nav links (About, Blog). The root files were removed; `_headers` stays at the repo root and is copied into `output/`.
 
 ## Deploy to Cloudflare Pages
 
