@@ -25,6 +25,7 @@ public static partial class RouteInventoryBuilder
         var inv = new RouteInventory();
         var endpoints = ((IEndpointRouteBuilder)app).DataSources.SelectMany(d => d.Endpoints).ToList();
         var sources = app.Services.GetServices<IStaticRouteSource>().ToList();
+        var gates = app.Services.GetServices<IStaticPageGate>().ToList();
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var ep in endpoints.OfType<RouteEndpoint>())
@@ -32,7 +33,7 @@ public static partial class RouteInventoryBuilder
             var cm = ep.Metadata.GetMetadata<ComponentTypeMetadata>();
             if (cm is not null)
             {
-                await AddPageAsync(inv, ep, cm.Type, options, sources, seen, ct);
+                await AddPageAsync(inv, ep, cm.Type, options, sources, gates, seen, ct);
                 continue;
             }
 
@@ -55,6 +56,11 @@ public static partial class RouteInventoryBuilder
             if (seen.Add(Normalize(extra)))
                 inv.Routes.Add(new StaticRoute(Normalize(extra), extra, RouteOrigin.Extra, null));
 
+        foreach (var g in gates)
+            if (!endpoints.OfType<RouteEndpoint>().Any(e => e.Metadata.GetMetadata<ComponentTypeMetadata>() is not null
+                    && string.Equals(e.RoutePattern.RawText, g.Template, StringComparison.OrdinalIgnoreCase)))
+                inv.Warnings.Add($"IStaticPageGate for template '{g.Template}' matches no page endpoint.");
+
         // Sources whose template matches no page: almost certainly a typo.
         foreach (var s in sources)
             if (!endpoints.OfType<RouteEndpoint>().Any(e => e.Metadata.GetMetadata<ComponentTypeMetadata>() is not null
@@ -67,7 +73,7 @@ public static partial class RouteInventoryBuilder
     }
 
     private static async Task AddPageAsync(RouteInventory inv, RouteEndpoint ep, Type component, StaticSiteOptions options,
-        List<IStaticRouteSource> sources, HashSet<string> seen, CancellationToken ct)
+        List<IStaticRouteSource> sources, List<IStaticPageGate> gates, HashSet<string> seen, CancellationToken ct)
     {
         var template = ep.RoutePattern.RawText ?? "/";
 
@@ -79,6 +85,14 @@ public static partial class RouteInventoryBuilder
             inv.Excluded.Add(new ExcludedRoute(template, "ExcludeFromStaticExport" + (excl.Reason is null ? "" : $" ({excl.Reason})"), component));
             return;
         }
+
+        // Page gate: the site may switch a page off at export time (e.g. no blog index without published posts).
+        foreach (var g in gates.Where(g => string.Equals(g.Template, template, StringComparison.OrdinalIgnoreCase)))
+            if (!g.ShouldExport(out var why))
+            {
+                inv.Excluded.Add(new ExcludedRoute(template, "IStaticPageGate" + (why is null ? "" : $" ({why})"), component));
+                return;
+            }
 
         // Auth gate: export runs anonymous; a login redirect would only ever be an error.
         if (options.ExcludeAuthorizedPages

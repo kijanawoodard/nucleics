@@ -7,7 +7,7 @@ Site for nuclear abundance advocacy. North star: **100 MWh of electricity per pe
 - Blazor SSR (.NET 11, no WASM, no interactive render modes, no AOT) exported to flat files in `output/`.
 - Hosted on Cloudflare Pages as static files; the build runs on Cloudflare via `build.sh`.
 - The original single page (`index.html`, `styles.css`, `assets/`) now lives in the Blazor site: markup in `Components/Pages/Home.razor` + `Components/Layout/MainLayout.razor`,
-  CSS and images in `src/Nucleics.Web/wwwroot` (referenced with fingerprinted `@Assets[...]`). The exported home page is pixel-identical to the old one except for two extra nav links (About, Blog). The root files were removed; `_headers` stays at the repo root and is copied into `output/`.
+  CSS and images in `src/Nucleics.Web/wwwroot` (referenced with fingerprinted `@Assets[...]`). The exported home page is pixel-identical to the old one (headless Chrome, 1280 and 390 px) and its body markup matches the original token for token. The live site is just that home page + `404.html`, `sitemap.xml`, `robots.txt` and `_headers`: there are no other pages, and no blog is published (see "How to add a post"). The root files were removed; `_headers` stays at the repo root and is copied into `output/`.
 
 ## Deploy to Cloudflare Pages
 
@@ -81,6 +81,10 @@ or a page that references a dropped asset. Dangling internal links fail **`check
 
 ### How to add a post
 
+The blog engine, `/blog` and `/blog/{slug}` are in place, but **nothing is published**: the only sample post (`content/posts/why-nuclear.md`) and `draft-unfinished.md` are `draft: true`,
+the nav does not link to the blog, and the blog index is switched off (`BlogIndexGate`, an `IStaticPageGate`) while there is no published post, so production ships no `/blog` and no placeholder content.
+See it working without touching the repo: `scripts/demo-blog.sh` (publishes a copy of the sample into a temp folder via `--Blog:ContentPath=…` and exports to a temp dir).
+
 1. Create `src/Nucleics.Web/content/posts/my-post.md`:
    ```markdown
    ---
@@ -94,6 +98,8 @@ or a page that references a dropped asset. Dangling internal links fail **`check
    Markdown body…
    ```
    The file name is the slug (`/blog/my-post/`); override with `slug:`. `draft: true` hides it from the blog and the export.
+   **Publish the first post:** delete the `draft: true` line from `why-nuclear.md` (or add a new post). The blog index appears in the export and sitemap automatically,
+   but the nav has no Blog link by design: add `<a href="@Home/blog/">Blog</a>`-style link to `MainLayout.razor` (a plain `/blog/` is fine) when you want it, and review the sample's copy first.
 2. `dotnet run --project src/Nucleics.Web -- export` → `output/blog/my-post/index.html`, listed in `sitemap.xml` and on `/blog/`.
    The page is the single catch-all `Components/Pages/BlogPost.razor` (`@page "/blog/{slug}"`); an unknown slug returns 404.
 

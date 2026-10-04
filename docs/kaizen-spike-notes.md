@@ -15,7 +15,7 @@ Nucleics.slnx
 src/Kaizen.StaticSite   exporter. IStaticRouteSource, ExcludeFromStaticExportAttribute, RouteInventoryBuilder, StaticSiteExporter, LinkScanner, EndpointReport
 src/Kaizen.BlogEngine   MarkdownPostService (Markdig + its YamlFrontMatter extension) + FrontMatterParser, IPostService, AddMarkdownContent(...)
 src/Kaizen.Seo          SeoHead.razor, JsonLdScript.razor, JsonLd helpers, SeoOptions/AddSeo (Razor class library)
-src/Nucleics.Web        Blazor SSR site: App/Routes/MainLayout, Home/About/Learn/BlogIndex/BlogPost/NotFound, Glue/BlogRouteSource, content/posts/*.md
+src/Nucleics.Web        Blazor SSR site: App/Routes/MainLayout, Home/BlogIndex/BlogPost/NotFound, Glue/BlogRouteSource, content/posts/*.md
 tests/Kaizen.StaticSite.Tests   xunit tests for the exporter (references only Kaizen.StaticSite)
 scripts/                verify-output.py, verify-seo.py, demo-check.sh
 docs/                   this file, spike1-endpoints.txt, spike5-check-demo.txt
@@ -107,7 +107,7 @@ Captain decisions applied: Pages builds with `bash build.sh` (output dir `output
 
 ## Follow-up 2026-10-04 (c): original page folded into the Blazor site
 - `Home.razor` is generated from the original `<main>` content (copy, headings, sections, `id`s, classes, in-page links `#learn/#argue/#build` unchanged); `MainLayout` holds the original header/footer; `styles.css` and the four images are byte-identical copies in `wwwroot` (`cmp`). Original head had only charset, viewport, title, description, 2 favicons and the stylesheet (no OG/Twitter/theme-color/analytics/scripts/fonts), all preserved; `SeoHead` *adds* canonical, Open Graph, Twitter card and JSON-LD.
-- Header nav keeps Learn/Argue/Build (as `/#learn` etc. so they work from every page) and adds **About** and **Blog** (the only deliberate design change; two lines marked in `MainLayout.razor`).
+- Header nav is the original Learn/Argue/Build only (~~About/Blog links were added here and removed again in (f)~~).
 - Live nucleics.org (curl) is byte-identical to `main:index.html` (4506 B) and `main:styles.css`.
 - Verified with headless Chrome (screenshots in `/workspace/shots`, box-local): with the two extra nav links removed the export is **pixel-identical** to the original at 1280×1400 and 390×2200 (light scheme); with them, pixels differ only in the nav row. Token-level HTML diff (`compare.py`): body identical except `href="#x"` → `href="/#x"` in the nav, the added links, and Blazor writing `alt` without `=""`; head differs only by the added `<base>`, canonical, OG and Twitter tags. Dark scheme was not screenshot-verified (the headless flag did not switch scheme); the dark CSS rules and `mark-dark.svg` are byte-identical.
 - Root `index.html`, `styles.css`, `assets/` deleted; `_headers` kept.
@@ -145,10 +145,17 @@ Compared `dotnet new blazor --interactivity None` and `... --empty` (SDK 11.0.10
 - `InvariantGlobalization=true` (ours, not in the template): kept deliberately so the SDK/app need no libicu on the build image.
 - `RootNamespace`/`AssemblyName` boilerplate; `System.Net.Http.Json` using; project-level `.gitignore`/`.editorconfig` (a repo-level `.gitignore` already exists; an `.editorconfig` could be added if you want enforced style).
 
+## Follow-up 2026-10-04 (f): captain's decisions — original-only home page, no placeholder pages
+- **Nav**: the extra About/Blog links are gone. `MainLayout` renders the section links as plain `#learn/#argue/#build` on `/` (exactly the original) and `/#learn…` on any other page (404, blog) so they never dangle. Exported `index.html` vs `git show main:index.html`: body tokens identical (only Blazor writing `alt` without `=""`, `&#x2014;`-style entity encoding and fingerprinted asset URLs differ); head differs only by `<base>`, canonical, OG/Twitter/JSON-LD and the fingerprinted favicon/CSS URLs. Screenshots at 1280×1400 and 390×2200 are **pixel-identical** (PIL `ImageChops.difference(...).getbbox() is None`). Dark scheme still not verified (headless Chrome ignored `preferredColorScheme`; CSS/`mark-dark.svg` are byte-identical).
+- **About and Learn pages deleted** (placeholder copy I wrote). `scripts/demo-check.sh` now injects its dangling link into `Home.razor`.
+- **Blog policy (my call):** keep the engine, `/blog`, `/blog/{slug}` and a sample post as a working demo, but **publish nothing**. `why-nuclear.md` is now `draft: true` (and its link to `/learn/` was removed); `draft-unfinished.md` was already a draft. The blog index is gated by a new tiny exporter contract, `IStaticPageGate` (Kaizen.StaticSite; implemented by `BlogIndexGate` in the site glue): with zero published posts `/blog` is *excluded* (listed as `skip /blog -- IStaticPageGate (no published posts)`), so there are no blog pages, no sitemap entries and no dangling links; the first published post makes `/blog` and `/blog/{slug}` appear. `/blog/{slug}` already expands to nothing without posts. Production export = `index.html`, `404.html`, `sitemap.xml` (only `/`), `robots.txt`, `_headers`, `kaizen-manifest.json`, assets.
+- `scripts/demo-blog.sh` shows the published state without touching the repo (copy of the sample, `--Blog:ContentPath=<tmp>` via configuration, export to a temp dir): `index.html`, `blog/index.html`, `blog/why-nuclear/index.html`, sitemap with 3 URLs; verify-output (48/48 = 200) and verify-seo (3 pages) pass on it.
+- Tests: +2 exporter tests (page gate off/on, gate matching no page warns), +1 blog test (missing/empty/all-draft folder → zero posts, no error). 
+
 ## Open questions for the captain
 1. ~~Drop ImportMap/_framework~~ — decided: dropped by default, `--keep-framework` to override.
 2. ~~`_headers` passthrough~~ — done (repo-root `_headers`/`_redirects` copied as-is).
 3. ~~Canonical form~~ — decided: keep trailing slash.
 4. ~~Dangling links~~ — decided: `check` only.
 5. ~~CF build image~~ — decided: Pages runs `build.sh`, which installs the SDK.
-6. Keep `Nucleics.Web` page set (Home/About/Learn/Blog) as a placeholder for real content? About/Learn copy is placeholder text I wrote.
+6. ~~Keep About/Learn placeholders and extra nav links?~~ — decided: removed (f); blog kept as an unpublished demo.

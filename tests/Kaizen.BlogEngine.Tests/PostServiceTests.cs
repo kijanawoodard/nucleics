@@ -34,6 +34,19 @@ public sealed class PostServiceTests : IDisposable
     }
 
     [Fact]
+    public void Zero_published_posts_is_fine_missing_folder_empty_folder_or_only_drafts()
+    {
+        var missing = new MarkdownPostService(new MarkdownContentOptions { ContentPath = Path.Combine(_dir, "nope") }, _dir);
+        Assert.Empty(missing.GetAll());
+        Assert.Empty(Service().GetAll()); // empty folder
+        Write("wip.md", "---\ntitle: WIP\ndate: 2026-10-02\ndraft: true\n---\nx");
+        var svc = Service();
+        Assert.Empty(svc.GetAll());
+        Assert.Empty(svc.GetTags());
+        Assert.Null(svc.GetBySlug("wip"));
+    }
+
+    [Fact]
     public void Drafts_are_hidden_unless_included_and_posts_sort_newest_first()
     {
         Write("old.md", "---\ntitle: Old\ndate: 2026-01-01\n---\nx");

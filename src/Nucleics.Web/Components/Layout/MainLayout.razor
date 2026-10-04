@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject NavigationManager Nav
 
 <a class="skip" href="#main">Skip to content</a>
 
@@ -11,12 +12,9 @@
         <span class="wordmark">Nucleics</span>
     </a>
     <nav class="nav" aria-label="Primary">
-        <a href="/#learn">Learn</a>
-        <a href="/#argue">Argue</a>
-        <a href="/#build">Build</a>
-        @* Not in the original single page: entry points to the extra pages (About, Blog). Delete these two lines to restore the original nav. *@
-        <a href="/about/">About</a>
-        <a href="/blog/">Blog</a>
+        <a href="@Home#learn">Learn</a>
+        <a href="@Home#argue">Argue</a>
+        <a href="@Home#build">Build</a>
     </nav>
 </header>
 
@@ -28,3 +26,8 @@
     <span class="footer-brand">nucleics.org</span>
     <span class="footer-tag">Abundance through fission</span>
 </footer>
+
+@code {
+    // On "/" the section links are plain "#learn" (exactly the original page); on any other page they need the "/" prefix.
+    private string Home => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/').Length == 0 ? "" : "/";
+}

@@ -19,6 +19,9 @@ public abstract class FixturePage : ComponentBase
 [Route("/items/{id}")] public sealed class ItemPage : FixturePage { [Parameter] public string Id { get; set; } = ""; }
 [Route("/unsourced/{x}")] public sealed class UnsourcedPage : FixturePage { [Parameter] public string X { get; set; } = ""; }
 
+[Route("/gated-off")] public sealed class GatedOffPage : FixturePage { }
+[Route("/gated-on")] public sealed class GatedOnPage : FixturePage { }
+
 public sealed class FixtureRoot : ComponentBase { }
 
 public sealed class ItemSource : IStaticRouteSource
@@ -31,4 +34,22 @@ public sealed class ItemSource : IStaticRouteSource
         yield return new Dictionary<string, string> { ["id"] = "b c" };
         await Task.CompletedTask;
     }
+}
+
+public sealed class GateOff : IStaticPageGate
+{
+    public string Template => "/gated-off";
+    public bool ShouldExport(out string? reason) { reason = "no content"; return false; }
+}
+
+public sealed class GateOn : IStaticPageGate
+{
+    public string Template => "/gated-on";
+    public bool ShouldExport(out string? reason) { reason = null; return true; }
+}
+
+public sealed class GateForNothing : IStaticPageGate
+{
+    public string Template => "/typo";
+    public bool ShouldExport(out string? reason) { reason = null; return true; }
 }

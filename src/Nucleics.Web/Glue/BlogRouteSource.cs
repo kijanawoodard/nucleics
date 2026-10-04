@@ -19,3 +19,18 @@ public sealed class BlogRouteSource(IPostService posts) : IStaticRouteSource
         await Task.CompletedTask;
     }
 }
+
+/// <summary>
+/// The blog index exists only while there is at least one published post, so a site with no posts (or only drafts) ships no /blog page
+/// and no dangling links to it. Adapts <see cref="IPostService"/> to the exporter's <see cref="IStaticPageGate"/>.
+/// </summary>
+public sealed class BlogIndexGate(IPostService posts) : IStaticPageGate
+{
+    public string Template => posts.UrlPrefix.TrimEnd('/');
+
+    public bool ShouldExport(out string? reason)
+    {
+        reason = posts.GetAll().Count == 0 ? "no published posts" : null;
+        return reason is null;
+    }
+}

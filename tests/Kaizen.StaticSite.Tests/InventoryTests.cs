@@ -12,6 +12,9 @@ public class InventoryTests
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddRazorComponents();
         builder.Services.AddSingleton<IStaticRouteSource, ItemSource>();
+        builder.Services.AddSingleton<IStaticPageGate, GateOff>();
+        builder.Services.AddSingleton<IStaticPageGate, GateOn>();
+        builder.Services.AddSingleton<IStaticPageGate, GateForNothing>();
         var app = builder.Build();
         app.MapRazorComponents<FixtureRoot>(); // discovers [Route] components in the root component's assembly (this test assembly)
         var options = new StaticSiteOptions();
@@ -68,6 +71,24 @@ public class InventoryTests
         Assert.Contains(inv.Routes, r => r.Path == "/items/b%20c");
         Assert.DoesNotContain(inv.Routes, r => r.Template == "/unsourced/{x}");
         Assert.Contains(inv.Warnings, w => w.Contains("/unsourced/{x}") && w.Contains("no IStaticRouteSource"));
+    }
+
+    [Fact]
+    public async Task Page_gate_can_switch_a_page_off_and_reports_why()
+    {
+        var inv = await BuildAsync();
+        Assert.DoesNotContain(inv.Routes, r => r.Path == "/gated-off");
+        var ex = Assert.Single(inv.Excluded, e => e.Template == "/gated-off");
+        Assert.Contains("IStaticPageGate", ex.Reason);
+        Assert.Contains("no content", ex.Reason);
+        Assert.Contains(inv.Routes, r => r.Path == "/gated-on");
+    }
+
+    [Fact]
+    public async Task Page_gate_matching_no_page_warns()
+    {
+        var inv = await BuildAsync();
+        Assert.Contains(inv.Warnings, w => w.Contains("IStaticPageGate") && w.Contains("/typo"));
     }
 
     [Fact]

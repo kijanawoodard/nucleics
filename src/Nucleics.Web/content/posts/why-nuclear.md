@@ -1,6 +1,7 @@
 ---
 title: Why nuclear? Start with energy density
 date: 2026-10-01
+draft: true
 updated: 2026-10-03
 description: A handful of uranium pellets powers a household for years. Density is the whole argument in one number.
 author: Kijana Woodard
@@ -18,6 +19,6 @@ That is why a plant needs trucks of fuel *per year*, not *per day*.
 - Less material per kilowatt-hour
 - Firm output, whatever the weather
 
-Read the [home page](/) for the metric, or [learn the basics](/learn/).
+Read the [home page](/) for the metric.
 
 > Fission is the quiet path that scales.
