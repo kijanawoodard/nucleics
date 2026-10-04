@@ -37,3 +37,77 @@ Then add the `nucleics.org` custom domain in the Pages project settings.
 ## Mark
 
 The header mark is a seven-shell uranium diagram: gaps encode the 92 electrons (2/8/18/32/21/9/2), amber nucleus, inbound neutron with a quiet trail. Fission as controlled process — never boom.
+
+---
+
+## Blazor SSR build (Kaizen spike — branch `kaizen-spike`)
+
+The plain `index.html` + `styles.css` above is still what Cloudflare deploys from `main` (untouched).
+This branch adds a **Blazor SSR → flat files** build on **.NET 11** (no WASM, no interactive render modes, no AOT).
+Design brief: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21). Findings: [docs/kaizen-spike-notes.md](docs/kaizen-spike-notes.md).
+
+```
+Nucleics.sln
+src/
+  Kaizen.StaticSite/   exporter: endpoint inventory, export, check, sitemap/robots/404, asset materialisation
+  Kaizen.BlogEngine/   Markdig + YAML front matter post service (IPostService)
+  Kaizen.Seo/          <SeoHead/> (title/description/canonical/OG/Twitter) + JSON-LD helpers
+  Nucleics.Web/        the site: layout, pages, content/posts/*.md, glue (BlogRouteSource)
+scripts/               verify-output.py, verify-seo.py, demo-check.sh
+```
+
+The three `Kaizen.*` libraries have **no references to each other**. Only `Nucleics.Web` references all three and
+wires them together (`Glue/BlogRouteSource.cs` adapts the blog's `IPostService` to the exporter's `IStaticRouteSource`).
+
+### Build / run / export / check
+
+Requires the .NET 11 SDK (`dotnet-install.sh --channel 11.0 --quality preview`; tested with 11.0.100-rc.1).
+
+```bash
+dotnet build Nucleics.sln                          # compile everything
+dotnet run --project src/Nucleics.Web              # normal live server (exporter inactive)
+dotnet run --project src/Nucleics.Web -- export    # write ./output  (alias: --static-export)
+dotnet run --project src/Nucleics.Web -- check     # CI gate: no files written, exit 1 on any problem
+dotnet run --project src/Nucleics.Web -- routes    # print every endpoint + the ComponentTypeMetadata filter result
+
+python3 scripts/verify-output.py output            # serve output/ with python http.server, assert every referenced URL is HTTP 200
+python3 scripts/verify-seo.py output               # canonical / og / JSON-LD / sitemap / robots assertions
+```
+
+`export` boots the real app on a random loopback port, fetches each route with `HttpClient`, and writes
+`output/<route>/index.html`, `404.html`, `sitemap.xml`, `robots.txt`, `kaizen-manifest.json` and every static asset
+(fingerprinted `@Assets[...]` files, `_framework/*`, RCL `_content/*`). `output/` is git-ignored.
+`check` fails (exit 1) on any non-200 route, a missing 404 page, any unreachable asset, and any internal link
+(`a/link/img/script`, canonical included) that points at something not generated. Add `--output <dir>` to change the folder.
+
+### How to add a route
+
+1. Add `src/Nucleics.Web/Components/Pages/Pricing.razor` with `@page "/pricing"` and a `<SeoHead Title="…" Description="…" />`.
+2. Link to it with a trailing slash: `<a href="/pricing/">` (exports as `pricing/index.html`; Cloudflare Pages serves `/pricing/`).
+3. `dotnet run --project src/Nucleics.Web -- check` — the page is picked up automatically (it is a Razor component endpoint).
+   - Opt out: `@attribute [ExcludeFromStaticExport("why")]`.
+   - `[Authorize]` pages are excluded automatically (the export runs anonymous).
+   - A parameterised route (`@page "/team/{id}"`) is **not exported** (loud warning) until you register an
+     `IStaticRouteSource` whose `Template` is `"/team/{id}"` and which yields `{ ["id"] = "…" }` per page (see `Glue/BlogRouteSource.cs`).
+
+### How to add a post
+
+1. Create `src/Nucleics.Web/content/posts/my-post.md`:
+   ```markdown
+   ---
+   title: My post
+   date: 2026-10-05
+   description: One-sentence summary (meta description, OG, JSON-LD).
+   tags: [nuclear]
+   draft: false
+   ---
+   Markdown body…
+   ```
+   The file name is the slug (`/blog/my-post/`); override with `slug:`. `draft: true` hides it from the blog and the export.
+2. `dotnet run --project src/Nucleics.Web -- export` → `output/blog/my-post/index.html`, listed in `sitemap.xml` and on `/blog/`.
+   The page is the single catch-all `Components/Pages/BlogPost.razor` (`@page "/blog/{slug}"`); an unknown slug returns 404.
+
+### Deploying `output/` (not wired up — spike scope)
+
+Cloudflare Pages: build command `dotnet run --project src/Nucleics.Web -- export` (needs the .NET 11 SDK on the build image),
+output directory `output`. No deploy config or workflow was changed on this branch.

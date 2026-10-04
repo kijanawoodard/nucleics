@@ -1,0 +1,42 @@
+Build succeeded.
+=== A) clean tree
+[Check] http://127.0.0.1:34819/  pages=5 excluded=2 assets=18
+[Check] pages_ok=5/5 http_failures=0 dangling_links=0
+[Check] PASS
+exit=0
+
+=== B) temporary broken link on /about
+Build succeeded.
+[Check] http://127.0.0.1:34535/  pages=5 excluded=2 assets=18
+  LINK /about: <a href="/does-not-exist/"> -> /does-not-exist (not generated)
+[Check] pages_ok=5/5 http_failures=0 dangling_links=1
+  ERROR dangling link /about: <a href="/does-not-exist/"> -> /does-not-exist (not generated)
+[Check] FAIL (1 problem(s))
+exit=1
+
+=== C) temporary pages: /broken (NavigationManager.NotFound -> 404) and /boom (throws -> 500)
+Build succeeded.
+[Check] http://127.0.0.1:34449/  pages=7 excluded=2 assets=18
+  FAIL /boom -> 500
+  FAIL /broken -> 404
+[Check] pages_ok=5/7 http_failures=2 dangling_links=0
+  ERROR route /boom -> HTTP 500 (template /boom)
+  ERROR route /broken -> HTTP 404 (template /broken)
+[Check] FAIL (2 problem(s))
+exit=1
+
+=== D) reverted
+Build succeeded.
+[Check] http://127.0.0.1:33955/  pages=5 excluded=2 assets=18
+[Check] pages_ok=5/5 http_failures=0 dangling_links=0
+[Check] PASS
+exit=0
+
+=== E) auth filter: default skips /admin; --include-auth shows why (anonymous export hits a login redirect)
+  skip /admin  -- requires authorization ([Authorize])
+exit=0
+  FAIL /admin -> 302
+[Check] pages_ok=5/6 http_failures=1 dangling_links=0
+  ERROR route /admin -> HTTP 302 (template /admin)
+[Check] FAIL (1 problem(s))
+exit=1
