@@ -24,7 +24,6 @@ builder.Services.AddRazorComponents();
 
 var app = builder.Build();
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>();
 

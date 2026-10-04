@@ -47,7 +47,7 @@ public sealed class StaticSiteExporter
         var inv = await RouteInventoryBuilder.BuildAsync(_app, _o, ct);
         var failures = new List<string>();
         if (inv.Routes.Count == 0) failures.Add("route inventory is empty: no exportable page endpoints were discovered");
-        _log.WriteLine($"[{mode}] {baseUri}  pages={inv.Routes.Count} excluded={inv.Excluded.Count} assets={inv.Assets.Count}");
+        _log.WriteLine($"[{mode}] {baseUri} env={_app.Environment.EnvironmentName} pages={inv.Routes.Count} excluded={inv.Excluded.Count} assets={inv.Assets.Count}");
         foreach (var w in inv.Warnings) _log.WriteLine($"  WARN {w}");
         foreach (var x in inv.Excluded) _log.WriteLine($"  skip {x.Template}  -- {x.Reason}");
 

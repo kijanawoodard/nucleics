@@ -118,6 +118,33 @@ Captain decisions applied: Pages builds with `bash build.sh` (output dir `output
 - **YamlDotNet removed.** The sample posts use only flat scalars, an inline tag list and `draft`, so front matter is now found by Markdig's `UseYamlFrontMatter()` and read by `FrontMatterParser` (~100 lines): plain/'single'/"double" scalars, `# comments`, inline `[a, b]` and block `- item` lists, `true/false`. Anything else (nested maps, `|`/`>` scalars, anchors, flow maps, duplicate keys, unterminated quotes) throws a clear error instead of being misread. Behaviour check: the export with the old YamlDotNet parser and the new one is byte-identical (`diff -r`). Tests: new `tests/Kaizen.BlogEngine.Tests` (26) + existing `Kaizen.StaticSite.Tests` (10), all passing. Known narrowing vs real YAML: no multi-line scalars, no nested structures, no YAML escapes beyond `\" \\ \n \t` in double quotes, booleans only `true/false` (not yes/no/on/off).
 - Library package version: a single `<Version>0.1.0</Version>` in `Directory.Build.props` for all projects (nothing is packed yet; per-library `<Version>` in the csproj can override when a library graduates to NuGet).
 
+## Follow-up 2026-10-04 (e): conformance with the stock .NET 11 Blazor template
+Compared `dotnet new blazor --interactivity None` and `... --empty` (SDK 11.0.100-rc.1; generated in /tmp, never committed) with `src/Nucleics.Web`.
+
+**Template facts observed**
+- Template `Program.cs` essentials: `AddRazorComponents()`; `if (!IsDevelopment()) { UseExceptionHandler("/Error", createScopeForErrors: true); UseHsts(); }`; `UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true)`; `UseHttpsRedirection()`; `MapStaticAssets()`; `MapRazorComponents<App>()`. The `--empty` variant has an identical `Program.cs`.
+- **`UseAntiforgery()` is NOT in the template** (not in .NET 11 RC1 `--interactivity None`, and not in `--empty`). Our site has no forms, and removing our `UseAntiforgery()` changed nothing (export output byte-identical, check/tests pass), so it was removed.
+- csproj: `net11.0`, `Nullable`, `ImplicitUsings`, `RootNamespace`, `AssemblyName` replace, and a new **`BlazorDisableThrowNavigationException=true`**. No `InvariantGlobalization`.
+- `App.razor`: `<BasePath />`, `<ResourcePreloader />`, `@Assets[...]` stylesheets (incl. the scoped-CSS bundle `<asm>.styles.css`), `<ImportMap />`, favicon as plain `href="favicon.png"`, `<HeadOutlet />`, and `<script src="@Assets["_framework/blazor.web.js"]">` at the end of body. `Routes.razor`: `Router` with `NotFoundPage="typeof(Pages.NotFound)"` + `FocusOnNavigate`. `NotFound.razor`: `@page "/not-found"` + explicit `@layout MainLayout`. `Error.razor` at `/Error` (shows `[PersistentState]` RequestId). `launchSettings.json` has `http` and `https` profiles (Development env, ports 5263/7222, `launchBrowser: true`). `appsettings.json` has Logging + `AllowedHosts: "*"`; `appsettings.Development.json` has Logging. No `.gitignore`/`.editorconfig` is generated inside the project.
+
+**Adopted (verified: export output byte-identical, verify-output 90/90 = 200, verify-seo, check, 36 tests, live 404s)**
+- `BlazorDisableThrowNavigationException=true` in `Nucleics.Web.csproj` (unknown slug still returns HTTP 404 with the layout, live-tested).
+- `Properties/launchSettings.json` (`http` profile only, Development, `http://localhost:5263`) and `appsettings.Development.json`.
+- `@layout MainLayout` on `NotFound.razor` (the Router's `NotFoundPage` path does not use `DefaultLayout`; harmless on the status-code re-execute path).
+- Removed `UseAntiforgery()` (see above).
+- Already matching: `Nullable`/`ImplicitUsings` (via `Directory.Build.props`), `BasePath`, `@Assets` (we also fingerprint the favicons, which the template does not), `ImportMap` (only with `--keep-framework`), `UseStatusCodePagesWithReExecute`, `MapStaticAssets`, `/not-found` route, `_Imports.razor`.
+- Because a launch profile now exists, `dotnet run` would run the export under `Development`. `export`/`check`/`routes` therefore force `Production` (the log line shows `env=Production`) unless `--environment X` is passed; `build.sh` also passes `--no-launch-profile`. Both Production and explicit Development exports produce the same output.
+
+**Not adopted — for the captain**
+- `UseHttpsRedirection()` / `UseHsts()`: the exporter fetches over plain `http://127.0.0.1`; a redirect to https would make every route fail. HTTPS/HSTS is Cloudflare's job for a static site.
+- `UseExceptionHandler("/Error")` + `Error.razor`: only matters for a live Kestrel server in production, which this site never is. In the exporter an exception must surface as HTTP 500 → build failure, and an `/Error` page would also become an exported route (needs `[ExcludeFromStaticExport]`). Easy to add if you plan to run the site live.
+- `https` launch profile: needs a dev certificate; add if wanted.
+- `<ResourcePreloader />`: emits only `Link` response headers, nothing in static HTML (tested: the only change was a blank line per page).
+- `<script src=@Assets["_framework/blazor.web.js"]>` and `FocusOnNavigate`: no JS ships on purpose; these come with `--keep-framework`/interactivity.
+- Scoped CSS bundle (`<asm>.styles.css`): the site has no `.razor.css` files yet.
+- `InvariantGlobalization=true` (ours, not in the template): kept deliberately so the SDK/app need no libicu on the build image.
+- `RootNamespace`/`AssemblyName` boilerplate; `System.Net.Http.Json` using; project-level `.gitignore`/`.editorconfig` (a repo-level `.gitignore` already exists; an `.editorconfig` could be added if you want enforced style).
+
 ## Open questions for the captain
 1. ~~Drop ImportMap/_framework~~ — decided: dropped by default, `--keep-framework` to override.
 2. ~~`_headers` passthrough~~ — done (repo-root `_headers`/`_redirects` copied as-is).

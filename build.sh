@@ -75,7 +75,7 @@ echo "sdk     : $("$DOTNET_DIR/dotnet" --version)"
 STEP="export site (dotnet run ... -- export)"
 echo "== [2/3] $STEP =="
 rm -rf output
-"$DOTNET_DIR/dotnet" run --project src/Nucleics.Web -c Release -- export
+"$DOTNET_DIR/dotnet" run --project src/Nucleics.Web -c Release --no-launch-profile -- export
 
 # --- 3. belt and braces: the export must have produced these, or the build fails --------------------------------------------
 STEP="verify output"

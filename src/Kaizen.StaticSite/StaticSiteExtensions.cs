@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,9 @@ public static class StaticSiteExtensions
         builder.Services.AddSingleton(options);
         if (IsStaticCommand(args))
         {
+            // Deterministic output: a launch profile (Development) must not change what gets exported. `--environment X` still wins.
+            if (!args.Contains("--environment") && !args.Any(a => a.StartsWith("--environment=")))
+                builder.Environment.EnvironmentName = Environments.Production;
             builder.Logging.SetMinimumLevel(LogLevel.Warning);
             builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Warning);
             builder.WebHost.UseStaticWebAssets(); // harmless when manifest is already wired; needed outside Development

@@ -49,7 +49,7 @@ Requires the .NET 11 SDK (`dotnet-install.sh --channel 11.0 --quality preview`; 
 
 ```bash
 dotnet build Nucleics.slnx                          # compile everything
-dotnet run --project src/Nucleics.Web              # normal live server (exporter inactive)
+dotnet run --project src/Nucleics.Web              # normal live server on http://localhost:5263 (launchSettings, Development; exporter inactive)
 dotnet run --project src/Nucleics.Web -- export    # write ./output  (alias: --static-export)
 dotnet run --project src/Nucleics.Web -- check     # CI gate: no files written, exit 1 on any problem
 dotnet run --project src/Nucleics.Web -- routes    # print every endpoint + the ComponentTypeMetadata filter result
