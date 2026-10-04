@@ -15,7 +15,8 @@ Nucleics.sln
 src/Kaizen.StaticSite   exporter. IStaticRouteSource, ExcludeFromStaticExportAttribute, RouteInventoryBuilder, StaticSiteExporter, LinkScanner, EndpointReport
 src/Kaizen.BlogEngine   MarkdownPostService (Markdig + YamlDotNet), IPostService, AddMarkdownContent(...)
 src/Kaizen.Seo          SeoHead.razor, JsonLdScript.razor, JsonLd helpers, SeoOptions/AddSeo (Razor class library)
-src/Nucleics.Web        Blazor SSR site: App/Routes/MainLayout, Home/About/Learn/BlogIndex/BlogPost/NotFound/Admin(stub), Glue/BlogRouteSource, content/posts/*.md
+src/Nucleics.Web        Blazor SSR site: App/Routes/MainLayout, Home/About/Learn/BlogIndex/BlogPost/NotFound, Glue/BlogRouteSource, content/posts/*.md
+tests/Kaizen.StaticSite.Tests   xunit tests for the exporter (references only Kaizen.StaticSite)
 scripts/                verify-output.py, verify-seo.py, demo-check.sh
 docs/                   this file, spike1-endpoints.txt, spike5-check-demo.txt
 ```
@@ -57,7 +58,7 @@ Glue: `Glue/BlogRouteSource : IStaticRouteSource` (Template `/blog/{slug}`) in t
 ### 5. `check` mode + auth filter — PASS (`docs/spike5-check-demo.txt`, reproducible via `scripts/demo-check.sh`)
 - clean: exit 0. Temporary dangling link `/does-not-exist/` on About: **exit 1**, `LINK /about: <a href="/does-not-exist/"> -> /does-not-exist (not generated)`.
   Temporary pages `/broken` (`NotFound()`) and `/boom` (throws): **exit 1**, `HTTP 404` and `HTTP 500`. Reverted → exit 0 again (script restores via `git checkout`/`rm` + trap).
-- `[Authorize]` filter: `/admin` stub page with `@attribute [Authorize]` + stub cookie auth. Default: `skip /admin -- requires authorization ([Authorize])`, check passes. With `--include-auth`: `FAIL /admin -> 302`, exit 1 (proves the page is real, protected, and that anonymous export would fail on it).
+- `[Authorize]` filter: during this spike an `/admin` stub page + stub cookie auth proved it end-to-end (skipped by default; `FAIL /admin -> 302` with `--include-auth`). **That stub page and the auth wiring were removed before merge** (2026-10-04); the site has no auth-gated page now. The filter is covered by unit tests only (see below).
   Detection = `IAuthorizeData` in endpoint metadata and no `IAllowAnonymous`.
 - `check` also: requires the 404 probe to return 404; fetches every asset (200); warns (non-fatal) `STALE` if an existing `output/kaizen-manifest.json` disagrees with the discovered routes (code path written, **not exercised in a demo**).
 - `export` fails (exit 1, **writes nothing**) on any non-200 route; dangling links are only reported in export (as in the plan: crawl is report-only), but are fatal in `check` (`FailOnBrokenLinksInCheck`, default true).
@@ -79,7 +80,7 @@ Glue: `Glue/BlogRouteSource : IStaticRouteSource` (Template `/blog/{slug}`) in t
 ## Unverified / not done (explicit)
 - **Cloudflare Pages** (still true): nothing deployed or even built there; "deploys with an empty build command" and "fingerprinted assets work on CF Pages" are **unverified** (verified only against python `http.server`). Pushing the branch may trigger a CF *preview* deployment of the repo root if the Pages project builds non-production branches — I did not touch or check CF config.
 - CF-specific behaviours not tested: `/about` → `/about/` 308 redirect, `_headers`/`_redirects` interplay ((resolved 2026-10-04: `_headers` is now copied into `output/`)).
-- Auth: only a stub (cookie scheme, no login page, `[Authorize]` on `/admin`). A real auth setup, `[AllowAnonymous]` precedence on a page, and policy-based `[Authorize(Policy=…)]` pages are untested beyond metadata detection. The `/admin` stub + `AddAuthentication().AddCookie("stub")` in `Program.cs` should be removed before real use.
+- Auth: the `[Authorize]` skip is covered **only by unit tests** (`tests/Kaizen.StaticSite.Tests`: `[Authorize]`, `[Authorize(Policy=…)]`, `[Authorize]`+`[AllowAnonymous]` precedence, `ExcludeAuthorizedPages=false`, plus opt-out attribute, parameterised-route expansion/warning and the `_headers`/`_redirects` limit warnings; 10 tests, `dotnet test tests/Kaizen.StaticSite.Tests`). **End-to-end with real authentication is unverified** (no login flow, no real policy, no real redirect/challenge behaviour beyond the earlier throwaway stub).
 - Interactive render modes: no warning implemented for interactive-only pages (plan mentions it) — not done, no interactive pages exist.
 - Not implemented: `BasePath` sub-path hosting configuration (component is rendered, but `/` is hard-coded in links), query-string pages, QuickGrid, tag pages, `lastmod` in sitemap, `<changefreq>`, per-page sitemap opt-out other than `[ExcludeFromStaticExport]`, Markdown media-folder copying (plan goal), RCL `_content/` and scoped CSS were **not exercised** (no RCL static assets/scoped CSS present — `Kaizen.Seo` has no wwwroot), compression selectors only skipped, not tested with `.br`.
 - `StaticAssetsEndpointDataSourceHelper` / `staticwebassets.build.endpoints.json` fallback not needed (the public `StaticAssetDescriptor` route worked) — not implemented.
@@ -98,6 +99,11 @@ Captain decisions applied: Pages builds with `bash build.sh` (output dir `output
 - **`_headers` / `_redirects`** are copied byte-for-byte from the repo root (where the existing `_headers` lives; `cmp` identical) into the output root. They are *not* put in `wwwroot` (it would publish them as ordinary assets). No `_redirects` example was added (no real redirects to invent). Limit warnings (stderr, exit stays 0) verified with temp oversize files: `_headers` 102 rules + a 2,110-char line; `_redirects` 2,002 static + 101 dynamic + a 1,115-char line + statics after a dynamic. Limits come from Cloudflare's docs (read 2026-10-04): headers 100 rules / 2,000 chars per line; redirects 2,000 static + 100 dynamic / 1,000 chars per declaration. (Your brief said 1,000-char lines generally; Cloudflare documents 2,000 for `_headers`, so that is what I used.) The parser is a heuristic (URL line = unindented non-comment line; dynamic = `*` or `:letter` in the source field).
 - **Exit codes** (all proven via `sh build.sh`): temp 404 page → exit 1, no output/ left; temp `IStaticRouteSource` that throws → `[kaizen] FAILED with an unhandled exception`, exit 1; compile error → exit 1; reverted → exit 0. New hard failures: empty route inventory; a page referencing an excluded asset (ImportMap forced on while `_framework` dropped → 10 errors, exit 1); stale `output/` is deleted on a failed export. `--output .` (or any dir containing the repo root/cwd) is refused, since export wipes its output dir.
 - **Framework drop**: output 4.9 MB → 168 KB; `verify-output.py` 81/81 URLs return 200 with the default, 93/93 with `--keep-framework`. The link scanner now also reads `<script type="importmap">` targets, so a stray reference to a dropped file fails the export. `FrameworkAssetPatterns` (`_framework/*`) is the list that is dropped when `KeepFramework` is false.
+
+## Follow-up 2026-10-04 (b): merge prep
+- `/admin` stub page and the stub cookie auth/authorization wiring removed from `Nucleics.Web`; the `[Authorize]`-skip logic and `--include-auth` stay in the exporter. `scripts/demo-check.sh` and `docs/spike5-check-demo.txt` no longer mention the stub.
+- New `tests/Kaizen.StaticSite.Tests` (xunit 2.9, Microsoft.NET.Test.Sdk, references only `Kaizen.StaticSite`), added to `Nucleics.sln`. `build.sh` runs `dotnet run --project src/Nucleics.Web`, which builds only the site and its three libraries, so tests are neither built nor needed on Cloudflare.
+- `build.sh` is committed as mode 100755; `./build.sh` runs directly.
 
 ## Open questions for the captain
 1. ~~Drop ImportMap/_framework~~ — decided: dropped by default, `--keep-framework` to override.

@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kaizen.Seo", "src\Kaizen.Se
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nucleics.Web", "src\Nucleics.Web\Nucleics.Web.csproj", "{5ED732B6-E1AD-4B18-953B-AB857D6BFF05}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kaizen.StaticSite.Tests", "tests\Kaizen.StaticSite.Tests\Kaizen.StaticSite.Tests.csproj", "{9405E234-175D-49AE-B084-07A5A2A5B352}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{5ED732B6-E1AD-4B18-953B-AB857D6BFF05}.Release|x64.Build.0 = Release|Any CPU
 		{5ED732B6-E1AD-4B18-953B-AB857D6BFF05}.Release|x86.ActiveCfg = Release|Any CPU
 		{5ED732B6-E1AD-4B18-953B-AB857D6BFF05}.Release|x86.Build.0 = Release|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Debug|x64.Build.0 = Debug|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Debug|x86.Build.0 = Debug|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Release|x64.ActiveCfg = Release|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Release|x64.Build.0 = Release|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Release|x86.ActiveCfg = Release|Any CPU
+		{9405E234-175D-49AE-B084-07A5A2A5B352}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

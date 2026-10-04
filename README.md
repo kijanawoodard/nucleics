@@ -35,6 +35,7 @@ src/
   Kaizen.BlogEngine/   Markdig + YAML front matter post service (IPostService)
   Kaizen.Seo/          <SeoHead/> (title/description/canonical/OG/Twitter) + JSON-LD helpers
   Nucleics.Web/        the site: layout, pages, content/posts/*.md, glue (BlogRouteSource)
+tests/                 Kaizen.StaticSite.Tests (xunit; not used by build.sh)
 scripts/               verify-output.py, verify-seo.py, demo-check.sh
 ```
 
@@ -51,6 +52,7 @@ dotnet run --project src/Nucleics.Web              # normal live server (exporte
 dotnet run --project src/Nucleics.Web -- export    # write ./output  (alias: --static-export)
 dotnet run --project src/Nucleics.Web -- check     # CI gate: no files written, exit 1 on any problem
 dotnet run --project src/Nucleics.Web -- routes    # print every endpoint + the ComponentTypeMetadata filter result
+dotnet test tests/Kaizen.StaticSite.Tests          # exporter unit tests (route filter, [Authorize] skip, _headers/_redirects limits)
 
 python3 scripts/verify-output.py output            # serve output/ with python http.server, assert every referenced URL is HTTP 200
 python3 scripts/verify-seo.py output               # canonical / og / JSON-LD / sitemap / robots assertions
@@ -72,7 +74,7 @@ or a page that references a dropped asset. Dangling internal links fail **`check
 2. Link to it with a trailing slash: `<a href="/pricing/">` (exports as `pricing/index.html`; Cloudflare Pages serves `/pricing/`).
 3. `dotnet run --project src/Nucleics.Web -- check` — the page is picked up automatically (it is a Razor component endpoint).
    - Opt out: `@attribute [ExcludeFromStaticExport("why")]`.
-   - `[Authorize]` pages are excluded automatically (the export runs anonymous).
+   - `[Authorize]` pages are excluded automatically (the export runs anonymous; `[AllowAnonymous]` wins). `--include-auth` disables that, for diagnostics.
    - A parameterised route (`@page "/team/{id}"`) is **not exported** (loud warning) until you register an
      `IStaticRouteSource` whose `Template` is `"/team/{id}"` and which yields `{ ["id"] = "…" }` per page (see `Glue/BlogRouteSource.cs`).
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Spike 5 demo: proves `check` passes when clean and fails (exit 1) on a dangling link, a 404 page, a 500 page,
-# and (with --include-auth) on the [Authorize] stub page. Every temporary change is reverted at the end.
+# Spike 5 demo: proves `check` passes when clean and fails (exit 1) on a dangling link, a 404 page, a 500 page.
+# Every temporary change is reverted at the end.
 set -u
 cd "$(dirname "$0")/.."
 P=src/Nucleics.Web
@@ -20,6 +20,4 @@ printf '@page "/boom"\n@code { protected override void OnInitialized() => throw 
 build; run check | grep -E '^\[|ERROR|LINK|FAIL|exit'
 rm -f $P/Components/Pages/Broken.razor $P/Components/Pages/Boom.razor
 echo; echo "=== D) reverted"; build; run check | grep -E '^\[|ERROR|LINK|FAIL|exit'
-echo; echo "=== E) auth filter: default skips /admin; --include-auth shows why (anonymous export hits a login redirect)"
-run check | grep -E 'skip /admin|exit'
-run check --include-auth | grep -E 'admin|^\[Check\] (pages|PASS|FAIL)|exit'
+echo; echo "=== E) auth filter: no auth-gated page exists in the site any more; the [Authorize]/[AllowAnonymous] skip logic is covered by tests/Kaizen.StaticSite.Tests (run: dotnet test tests/Kaizen.StaticSite.Tests)"

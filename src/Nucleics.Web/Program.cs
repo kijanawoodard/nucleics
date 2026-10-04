@@ -22,14 +22,8 @@ builder.Services.AddSingleton<IStaticRouteSource, BlogRouteSource>();        // 
 
 builder.Services.AddRazorComponents();
 
-// SPIKE STUB auth so the [Authorize] filter can be exercised end-to-end. Not a real login flow.
-builder.Services.AddAuthentication("stub").AddCookie("stub");
-builder.Services.AddAuthorization();
-
 var app = builder.Build();
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>();
