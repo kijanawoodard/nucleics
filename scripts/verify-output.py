@@ -81,7 +81,7 @@ for page in pages:
         results.append((rel, absu, f"{tag}[{attr}]", get(absu)))
 
 # --- icons: /favicon.ico must exist unfingerprinted with an icon content type; every icon <link> in every page must resolve to an image ---
-ICON_TYPES = {"image/x-icon", "image/vnd.microsoft.icon"}   # python http.server says one of these; Cloudflare Pages serves .ico as image/x-icon
+ICON_TYPES = {"image/x-icon", "image/vnd.microsoft.icon"}   # python http.server says one of these; Cloudflare Pages was observed serving image/vnd.microsoft.icon (image/x-icon is also accepted)
 icon_problems = []
 def fetch(url):
     try:

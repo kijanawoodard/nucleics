@@ -116,7 +116,7 @@ Head icons (in `Components/App.razor`; the two original PNG links are unchanged 
 `src/Nucleics.Web/wwwroot/favicon.ico` (16/32/48 px, PNG-compressed frames) and `wwwroot/assets/apple-touch-icon.png` are **generated, committed source files**: `scripts/make-icons.py` renders `mark.svg` with headless Chrome at 2x,
 crops a square around the mark (the SVG has a wide margin), thickens the 3-unit hairline strokes per size (they would vanish at 16 px) and downsamples with Lanczos. Re-run it only if the mark changes (needs `google-chrome` + Pillow; not part of `build.sh`; output is reproducible).
 **`/favicon.ico` is deliberately not fingerprinted** (crawlers request that exact path): `MapStaticAssets` serves every `wwwroot` file under its plain name too, so the exporter writes `output/favicon.ico` (byte-identical to the source; `build.sh` fails if it is missing)
-next to an unused fingerprinted copy, like the other assets. `scripts/verify-output.py` asserts `/favicon.ico` is 200 with an icon content type (`image/x-icon` as Cloudflare Pages serves it, or `image/vnd.microsoft.icon` as python `http.server` says), is a 16/32/48 ICO identical to the source, and that every icon `<link>` resolves to an image;
+next to an unused fingerprinted copy, like the other assets. `scripts/verify-output.py` asserts `/favicon.ico` is 200 with an icon content type (`image/vnd.microsoft.icon` is what both python `http.server` and Cloudflare Pages were observed to send; `image/x-icon` is accepted too), is a 16/32/48 ICO identical to the source, and that every icon `<link>` resolves to an image;
 `scripts/verify-seo.py` asserts the icon links are present in every page.
 
 ### Cloudflare Pages (build.sh)
