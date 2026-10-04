@@ -2,6 +2,7 @@ using Kaizen.StaticSite;
 using Nucleics.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddStaticSite(args, o => o.SiteUrl = "https://nucleics.org");
 builder.Services.AddRazorComponents();
 
 var app = builder.Build();
@@ -10,5 +11,4 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>();
 
-if (args.Contains("routes")) { await app.StartAsync(); EndpointReport.Print(app, Console.Out); await app.StopAsync(); return; }
-app.Run();
+return await app.RunStaticSiteAsync(args);

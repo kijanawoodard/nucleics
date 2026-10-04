@@ -23,6 +23,12 @@ public sealed class StaticSiteOptions
     /// <summary>Extra literal paths to export in addition to the inventory (for example pages not reachable via endpoints).</summary>
     public List<string> ExtraPaths { get; } = new();
 
+    /// <summary>
+    /// Asset routes NOT materialised (glob: '*' wildcard only). Default drops pre-compressed siblings (.gz/.br); the importmap lists
+    /// the Blazor Server script too, so everything the importmap names must exist.
+    /// </summary>
+    public List<string> AssetExcludePatterns { get; } = new() { "*.gz", "*.br" };
+
     /// <summary>In check mode, dangling internal links fail the run (exit code 1). Export mode only reports them.</summary>
     public bool FailOnBrokenLinksInCheck { get; set; } = true;
 }
