@@ -1,4 +1,4 @@
-# Kaizen spike notes (branch `kaizen-spike`)
+# Kaizen spike notes (written on the kaizen-spike branch, 2026-10)
 
 Plan: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21) (body + two comments). Everything below was **run for real** on a Linux box
 (Debian 13) unless it is in the "Unverified / not done" list.

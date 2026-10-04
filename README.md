@@ -1,38 +1,21 @@
 # nucleics.org
 
-Single-page static site for nuclear abundance advocacy.
-North star: **100 MWh of electricity per person per year**.
+Site for nuclear abundance advocacy. North star: **100 MWh of electricity per person per year**.
 
 ## Stack
 
-- Plain `index.html` + `styles.css`
-- No build step, no framework
-- Logo SVGs and favicons in `assets/`
-
-## Local preview
-
-Open `index.html` in a browser, or:
-
-```bash
-npx --yes serve .
-```
+- Blazor SSR (.NET 11, no WASM, no interactive render modes, no AOT) exported to flat files in `output/`.
+- Hosted on Cloudflare Pages as static files; the build runs on Cloudflare via `build.sh`.
+- `index.html`, `styles.css` and `assets/` at the repo root are the original hand-written single page. They are kept for reference and are **no longer deployed**
+  (the site's copies live in `src/Nucleics.Web/wwwroot`).
 
 ## Deploy to Cloudflare Pages
 
-### Option A — connect GitHub
+Settings: **Build command** `./build.sh` (or `build.sh`; the executable bit is committed; `bash build.sh` also works) ·
+**Build output directory** `output` · production branch `main` · root directory `/`. Then attach custom domain `nucleics.org`.
+`build.sh` downloads the pinned .NET SDK at build time (see "Cloudflare Pages (build.sh)" below).
 
-1. [Cloudflare Dashboard](https://dash.cloudflare.com) → Workers & Pages → Create → Pages → Connect to Git
-2. Select `kijanawoodard/nucleics`
-3. Build settings: **Framework preset** None · **Build command** empty · **Output directory** `/` (or leave blank)
-4. Deploy, then attach custom domain `nucleics.org`
-
-### Option B — direct upload (Wrangler)
-
-```bash
-npx wrangler pages deploy . --project-name=nucleics
-```
-
-Then add the `nucleics.org` custom domain in the Pages project settings.
+Manual direct upload (after running `./build.sh` locally): `npx wrangler pages deploy output --project-name=nucleics`.
 
 ## Mark
 
@@ -40,10 +23,9 @@ The header mark is a seven-shell uranium diagram: gaps encode the 92 electrons (
 
 ---
 
-## Blazor SSR build (Kaizen spike — branch `kaizen-spike`)
+## Blazor SSR build (Kaizen)
 
-The plain `index.html` + `styles.css` above is still what Cloudflare deploys from `main` (untouched).
-This branch adds a **Blazor SSR → flat files** build on **.NET 11** (no WASM, no interactive render modes, no AOT).
+A **Blazor SSR → flat files** build on **.NET 11** (no WASM, no interactive render modes, no AOT).
 Design brief: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21). Findings: [docs/kaizen-spike-notes.md](docs/kaizen-spike-notes.md).
 
 ```
@@ -113,7 +95,7 @@ or a page that references a dropped asset. Dangling internal links fail **`check
 
 ### Cloudflare Pages (build.sh)
 
-Cloudflare Pages settings: **Build command** `bash build.sh` · **Build output directory** `output` · root directory `/`.
+Cloudflare Pages settings: **Build command** `./build.sh` or `build.sh` (mode 100755 is committed; `bash build.sh` is equivalent) · **Build output directory** `output` · root directory `/`.
 `build.sh` (POSIX `sh`, `set -e`) downloads `dotnet-install.sh`, installs the exact pinned SDK (`--version 11.0.100-rc.1.26425.128`, not a channel)
 into `./dotnet`, and runs only `./dotnet/dotnet run --project src/Nucleics.Web -c Release -- export`.
 The build image needs `curl`, `tar`/`gzip` and a shell; nothing else (no global dotnet, no Node, no libicu: `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`).
