@@ -40,8 +40,13 @@ public static partial class RouteInventoryBuilder
             if (sa is not null && sa.Selectors.Count == 0)
             {
                 var route = sa.Route.TrimStart('/');
-                if (options.AssetExcludePatterns.Any(p => GlobMatch(p, route))) continue;
-                if (inv.Assets.Any(a => a.Route == route)) continue; // compressed/selector duplicates
+                if (inv.Assets.Any(a => a.Route == route) || inv.ExcludedAssets.Any(a => a.Route == route)) continue; // selector duplicates
+                var patterns = options.KeepFramework ? options.AssetExcludePatterns : options.AssetExcludePatterns.Concat(options.FrameworkAssetPatterns);
+                if (patterns.Any(p => GlobMatch(p, route)))
+                {
+                    if (!route.EndsWith(".gz") && !route.EndsWith(".br")) inv.ExcludedAssets.Add(new AssetRoute(route, sa.AssetPath));
+                    continue;
+                }
                 inv.Assets.Add(new AssetRoute(route, sa.AssetPath));
             }
         }

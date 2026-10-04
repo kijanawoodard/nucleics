@@ -45,11 +45,12 @@ public sealed class StaticSiteExporter
         { BaseAddress = baseUri, Timeout = TimeSpan.FromSeconds(30) };
 
         var inv = await RouteInventoryBuilder.BuildAsync(_app, _o, ct);
+        var failures = new List<string>();
+        if (inv.Routes.Count == 0) failures.Add("route inventory is empty: no exportable page endpoints were discovered");
         _log.WriteLine($"[{mode}] {baseUri}  pages={inv.Routes.Count} excluded={inv.Excluded.Count} assets={inv.Assets.Count}");
         foreach (var w in inv.Warnings) _log.WriteLine($"  WARN {w}");
         foreach (var x in inv.Excluded) _log.WriteLine($"  skip {x.Template}  -- {x.Reason}");
 
-        var failures = new List<string>();
         var pages = new Dictionary<string, string>(StringComparer.Ordinal); // path -> html
         var outRoot = Path.GetFullPath(_o.OutputPath);
 
@@ -92,9 +93,12 @@ public sealed class StaticSiteExporter
         foreach (var a in inv.Assets) known.Add(RouteInventoryBuilder.Normalize(a.Route));
         known.UnionWith(new[] { "/404.html", "/sitemap.xml", "/robots.txt" });
         var dangling = new List<string>();
+        var droppedRoutes = inv.ExcludedAssets.Select(a => RouteInventoryBuilder.Normalize(a.Route)).ToHashSet(StringComparer.Ordinal);
         foreach (var (path, html) in pages)
             foreach (var re in LinkScanner.Scan(html, new Uri(baseUri, path), _o.SiteUrl))
-                if (re.InternalPath is not null && !known.Contains(re.InternalPath))
+                if (re.InternalPath is not null && droppedRoutes.Contains(re.InternalPath))
+                    failures.Add($"{path}: <{re.Tag} {re.Attribute}=\"{re.Raw}\"> references {re.InternalPath}, an asset that is excluded from the output (use --keep-framework or stop referencing it)");
+                else if (re.InternalPath is not null && !known.Contains(re.InternalPath))
                     dangling.Add($"{path}: <{re.Tag} {re.Attribute}=\"{re.Raw}\"> -> {re.InternalPath} (not generated)");
         dangling = dangling.Distinct().ToList();
         foreach (var d in dangling) _log.WriteLine($"  LINK {d}");
@@ -113,8 +117,9 @@ public sealed class StaticSiteExporter
         // 5) write
         if (mode == StaticSiteMode.Export && failures.Count == 0)
         {
-            WriteOutput(outRoot, inv, pages, notFoundHtml, assetBytes);
-            _log.WriteLine($"  wrote {outRoot}: {pages.Count} pages, {assetBytes.Count} assets, 404.html, sitemap.xml, robots.txt, kaizen-manifest.json");
+            var passthrough = WriteOutput(outRoot, inv, pages, notFoundHtml, assetBytes);
+            _log.WriteLine($"  wrote {outRoot}: {pages.Count} pages, {assetBytes.Count} assets, 404.html, sitemap.xml, robots.txt, kaizen-manifest.json" + (passthrough.Count > 0 ? ", " + string.Join(", ", passthrough) : ""));
+            if (inv.ExcludedAssets.Count > 0) _log.WriteLine($"  dropped {inv.ExcludedAssets.Count} unused framework asset(s) (pass --keep-framework to keep)");
         }
 
         _log.WriteLine($"[{mode}] pages_ok={pages.Count}/{inv.Routes.Count} http_failures={failures.Count} dangling_links={dangling.Count}");
@@ -127,7 +132,7 @@ public sealed class StaticSiteExporter
 
     private static string FileFor(string routePath) => routePath == "/" ? "index.html" : routePath.TrimStart('/') + "/index.html";
 
-    private void WriteOutput(string outRoot, RouteInventory inv, Dictionary<string, string> pages, string? notFoundHtml,
+    private List<string> WriteOutput(string outRoot, RouteInventory inv, Dictionary<string, string> pages, string? notFoundHtml,
         Dictionary<string, byte[]> assets)
     {
         if (Directory.Exists(outRoot)) Directory.Delete(outRoot, recursive: true);
@@ -163,5 +168,7 @@ public sealed class StaticSiteExporter
             excluded = inv.Excluded.Select(e => new { e.Template, e.Reason }),
         };
         File.WriteAllText(Safe("kaizen-manifest.json"), JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
+
+        return PassthroughFiles.Copy(_o, outRoot, _log, Console.Error);
     }
 }

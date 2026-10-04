@@ -21,6 +21,8 @@ public static class StaticSiteExtensions
         if (!Path.IsPathRooted(options.OutputPath))
             options.OutputPath = Path.Combine(FindRepoRoot(builder.Environment.ContentRootPath), options.OutputPath);
         if (args.Contains("--include-auth")) options.ExcludeAuthorizedPages = false; // demo/diagnostics: export runs anonymous, expect failures
+        if (args.Contains("--keep-framework")) options.KeepFramework = true;
+        options.PassthroughDirectory ??= FindRepoRoot(builder.Environment.ContentRootPath);
         builder.Services.AddSingleton(options);
         if (IsStaticCommand(args))
         {
@@ -47,6 +49,17 @@ public static class StaticSiteExtensions
     public static async Task<int> RunStaticSiteAsync(this WebApplication app, string[] args)
     {
         var options = app.Services.GetRequiredService<StaticSiteOptions>();
+        try { return await RunCoreAsync(app, args, options); }
+        catch (Exception ex) when (IsStaticCommand(args) && ex is not OperationCanceledException)
+        {
+            // Any unexpected failure while exporting/checking must be a deterministic non-zero exit (CI / Cloudflare build fails).
+            Console.Error.WriteLine($"[kaizen] FAILED with an unhandled exception: {ex}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> RunCoreAsync(WebApplication app, string[] args, StaticSiteOptions options)
+    {
         if (args.Contains("routes"))
         {
             app.Urls.Clear(); app.Urls.Add("http://127.0.0.1:0");

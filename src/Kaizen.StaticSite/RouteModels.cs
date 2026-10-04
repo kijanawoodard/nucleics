@@ -16,6 +16,8 @@ public sealed class RouteInventory
     public List<StaticRoute> Routes { get; } = new();
     public List<ExcludedRoute> Excluded { get; } = new();
     public List<AssetRoute> Assets { get; } = new();
+    /// <summary>Asset routes deliberately not materialised; no exported page may reference them.</summary>
+    public List<AssetRoute> ExcludedAssets { get; } = new();
     public List<string> Warnings { get; } = new();
 
     public IReadOnlySet<string> RoutePaths =>

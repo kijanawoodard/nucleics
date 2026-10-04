@@ -8,6 +8,21 @@ public sealed class StaticSiteOptions
     /// <summary>Absolute site URL used in sitemap.xml and robots.txt, e.g. https://nucleics.org (no trailing slash).</summary>
     public string SiteUrl { get; set; } = "http://localhost";
 
+    /// <summary>
+    /// Folder holding host files copied verbatim into the output root (see <see cref="PassthroughFiles"/>).
+    /// Set by <c>AddStaticSite</c> to the repo/solution root; <c>null</c> disables passthrough.
+    /// </summary>
+    public string? PassthroughDirectory { get; set; }
+
+    /// <summary>Plain-text host config files (no extension) copied as-is when present. Cloudflare Pages reads both from the output root.</summary>
+    public List<string> PassthroughFiles { get; } = new() { "_headers", "_redirects" };
+
+    /// <summary>
+    /// Keep the Blazor framework scripts (<c>_framework/*</c>) and render the importmap that names them.
+    /// Default false: a script-free SSR site ships neither. CLI: <c>--keep-framework</c>.
+    /// </summary>
+    public bool KeepFramework { get; set; }
+
     /// <summary>Pages carrying [Authorize] (and no [AllowAnonymous]) are excluded: the export runs anonymous.</summary>
     public bool ExcludeAuthorizedPages { get; set; } = true;
 
@@ -24,10 +39,12 @@ public sealed class StaticSiteOptions
     public List<string> ExtraPaths { get; } = new();
 
     /// <summary>
-    /// Asset routes NOT materialised (glob: '*' wildcard only). Default drops pre-compressed siblings (.gz/.br); the importmap lists
-    /// the Blazor Server script too, so everything the importmap names must exist.
+    /// Asset routes NOT materialised (glob: '*' wildcard only). Default drops pre-compressed siblings (.gz/.br); 
     /// </summary>
     public List<string> AssetExcludePatterns { get; } = new() { "*.gz", "*.br" };
+
+    /// <summary>Extra asset exclusions applied only while <see cref="KeepFramework"/> is false.</summary>
+    public List<string> FrameworkAssetPatterns { get; } = new() { "_framework/*" };
 
     /// <summary>In check mode, dangling internal links fail the run (exit code 1). Export mode only reports them.</summary>
     public bool FailOnBrokenLinksInCheck { get; set; } = true;

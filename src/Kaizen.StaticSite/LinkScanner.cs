@@ -12,6 +12,9 @@ public static partial class LinkScanner
     [GeneratedRegex(@"<base\b[^>]*\bhref\s*=\s*""(?<v>[^""]*)""", RegexOptions.IgnoreCase)]
     private static partial Regex BaseRegex();
 
+    [GeneratedRegex(@"<script\b[^>]*type\s*=\s*""importmap""[^>]*>(?<json>.*?)</script>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    private static partial Regex ImportMapRegex();
+
     public sealed record Reference(string Tag, string Attribute, string Raw, string? InternalPath);
 
     /// <param name="pageUri">The URL the page was fetched from (decides how relative URLs resolve).</param>
@@ -33,6 +36,23 @@ public static partial class LinkScanner
                                || (siteUri is not null && abs.Host == siteUri.Host);
             list.Add(new Reference(t.Groups["tag"].Value.ToLowerInvariant(), a.Groups["name"].Value.ToLowerInvariant(), raw,
                 internalHost ? Canonical(abs) : null));
+        }
+        // <script type="importmap"> targets are references too (nothing in href/src names them)
+        foreach (Match im in ImportMapRegex().Matches(html))
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(im.Groups["json"].Value);
+                if (!doc.RootElement.TryGetProperty("imports", out var imports)) continue;
+                foreach (var p in imports.EnumerateObject())
+                {
+                    var raw = p.Value.GetString() ?? "";
+                    if (!Uri.TryCreate(baseUri, raw, out var abs)) continue;
+                    var internalHost = abs.Host == pageUri.Host && abs.Port == pageUri.Port || (siteUri is not null && abs.Host == siteUri.Host);
+                    list.Add(new Reference("importmap", "imports", raw, internalHost ? Canonical(abs) : null));
+                }
+            }
+            catch (System.Text.Json.JsonException) { }
         }
         return list;
     }
