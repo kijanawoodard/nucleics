@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <!-- As in the .NET 11 Blazor template: NavigationManager.NotFound()/NavigateTo do not throw in static SSR. -->
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The site wires the three libraries together. The libraries do NOT reference each other. -->
+    <ProjectReference Include="..\Kaizen.StaticSite\Kaizen.StaticSite.csproj" />
+    <ProjectReference Include="..\Kaizen.BlogEngine\Kaizen.BlogEngine.csproj" />
+    <ProjectReference Include="..\Kaizen.Seo\Kaizen.Seo.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="content\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

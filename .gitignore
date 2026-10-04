@@ -1,0 +1,13 @@
+bin/
+obj/
+output/
+*.user
+.vs/
+.idea/
+.dotnet/
+# build.sh (Cloudflare Pages) local SDK + installer
+dotnet/
+dotnet-install.sh
+.dotnet-home/
+.nuget/
+.home/

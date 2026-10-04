@@ -1,0 +1,6 @@
+=== export
+[kaizen] FAILED with an unhandled exception: System.InvalidOperationException: /tmp/tmp.2sv5EHiMHi/posts/bad.md, line 4: invalid front matter: unknown key 'dratf' (allowed, lowercase camelCase: title, date, updated, description, author, slug, tags, draft); keys are case-sensitive and typos are errors, not ignored.
+exit=1
+=== check
+[kaizen] FAILED with an unhandled exception: System.InvalidOperationException: /tmp/tmp.2sv5EHiMHi/posts/bad.md, line 4: invalid front matter: unknown key 'dratf' (allowed, lowercase camelCase: title, date, updated, description, author, slug, tags, draft); keys are case-sensitive and typos are errors, not ignored.
+exit=1

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kaizen.BlogEngine/Kaizen.BlogEngine.csproj" />
+    <Project Path="src/Kaizen.Seo/Kaizen.Seo.csproj" />
+    <Project Path="src/Kaizen.StaticSite/Kaizen.StaticSite.csproj" />
+    <Project Path="src/Nucleics.Web/Nucleics.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kaizen.BlogEngine.Tests/Kaizen.BlogEngine.Tests.csproj" />
+    <Project Path="tests/Kaizen.StaticSite.Tests/Kaizen.StaticSite.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,27 @@
+@page "/blog"
+@inject IPostService Posts
+
+<SeoHead Title="Blog — Nucleics"
+         Description="Clear claims, careful evidence: writing on nuclear abundance."
+         JsonLdData='new object[] { JsonLd.BreadcrumbList(("Home", "https://nucleics.org/"), ("Blog", "https://nucleics.org/blog/")) }' />
+
+<section class="hero">
+    <p class="eyebrow">Blog</p>
+    <h1>Clear claims, careful evidence.</h1>
+</section>
+
+<section class="why">
+    <ul class="why-list">
+        @foreach (var post in Posts.GetAll())
+        {
+            <li>
+                <strong><a class="text-link" href="@post.Url">@post.Title</a></strong>
+                <time datetime="@post.Date.ToString("yyyy-MM-dd")">@post.Date.ToString("yyyy-MM-dd")</time>
+                @if (post.Description is not null)
+                {
+                    <span> — @post.Description</span>
+                }
+            </li>
+        }
+    </ul>
+</section>
