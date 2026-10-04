@@ -53,6 +53,14 @@ public sealed class StaticSiteExporter
 
         var pages = new Dictionary<string, string>(StringComparer.Ordinal); // path -> html
         var outRoot = Path.GetFullPath(_o.OutputPath);
+        // The export deletes outRoot before writing: refuse anything that is, or contains, the repo root / cwd.
+        foreach (var protectedDir in new[] { _o.PassthroughDirectory, Directory.GetCurrentDirectory(), Path.GetPathRoot(outRoot) }.Where(d => d is not null))
+        {
+            var pd = Path.GetFullPath(protectedDir!).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var od = outRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            if (pd.StartsWith(od, StringComparison.Ordinal))
+                throw new InvalidOperationException($"Refusing output path '{outRoot}': it is or contains '{protectedDir}'. Use a dedicated folder such as ./output.");
+        }
 
         // 1) pages
         foreach (var r in inv.Routes)
@@ -112,6 +120,13 @@ public sealed class StaticSiteExporter
             var written = doc.RootElement.GetProperty("pages").EnumerateArray().Select(e => e.GetProperty("Path").GetString()!).ToHashSet(StringComparer.Ordinal);
             foreach (var p in pages.Keys.Except(written).Order(StringComparer.Ordinal)) _log.WriteLine($"  STALE route {p} is discovered but missing from {_o.OutputPath} (re-run export)");
             foreach (var p in written.Except(pages.Keys).Order(StringComparer.Ordinal)) _log.WriteLine($"  STALE route {p} is in {_o.OutputPath} but no longer discovered");
+        }
+
+        // 4c) a failed export must not leave an older, stale output/ lying around to be deployed by accident
+        if (mode == StaticSiteMode.Export && failures.Count > 0 && Directory.Exists(outRoot))
+        {
+            Directory.Delete(outRoot, recursive: true);
+            _log.WriteLine($"  removed stale {outRoot} (export failed)");
         }
 
         // 5) write

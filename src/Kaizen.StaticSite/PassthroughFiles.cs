@@ -45,7 +45,7 @@ public static class PassthroughFiles
         }
         else if (fileName == "_redirects")
         {
-            int stat = 0, dyn = 0, lastDynamic = -1;
+            int stat = 0, dyn = 0, lastDynamic = -1, staticAfterDynamic = 0, firstMisordered = 0;
             for (var i = 0; i < lines.Count; i++)
             {
                 var l = lines[i];
@@ -58,9 +58,10 @@ public static class PassthroughFiles
                 else
                 {
                     stat++;
-                    if (lastDynamic >= 0) yield return $"line {i + 1}: static redirect after a dynamic one (static rules should come first).";
+                    if (lastDynamic >= 0 && staticAfterDynamic++ == 0) firstMisordered = i + 1;
                 }
             }
+            if (staticAfterDynamic > 0) yield return $"{staticAfterDynamic} static redirect(s) appear after a dynamic one, first at line {firstMisordered} (static rules should come first).";
             if (stat > RedirectsMaxStatic) yield return $"{stat} static redirects exceeds the limit of {RedirectsMaxStatic}.";
             if (dyn > RedirectsMaxDynamic) yield return $"{dyn} dynamic redirects exceeds the limit of {RedirectsMaxDynamic}.";
         }
