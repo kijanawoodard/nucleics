@@ -6,14 +6,14 @@ Plan: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21) (body + two
 ## Versions actually used
 - **.NET SDK 11.0.100-rc.1.26425.128**, runtime Microsoft.NETCore.App / Microsoft.AspNetCore.App **11.0.0-rc.1.26425.128**
   (installed with `dotnet-install.sh --channel 11.0 --quality preview --install-dir ~/.dotnet`). Real .NET 11 RC1, not a .NET 10 fallback.
-- Markdig 1.4.0, YamlDotNet 18.1.0 (pinned after a floating restore). No other NuGet packages.
+- Markdig 1.4.0 is the only runtime NuGet package (see follow-up (d): YamlDotNet was removed). Test-only: Microsoft.NET.Test.Sdk 17.14.1, xunit 2.9.3, xunit.runner.visualstudio 3.1.5.
 - `TargetFramework=net11.0`, `PublishAot=false`, no WASM, no interactive render modes. All three libs use `FrameworkReference Microsoft.AspNetCore.App`.
 
 ## Layout
 ```
 Nucleics.slnx
 src/Kaizen.StaticSite   exporter. IStaticRouteSource, ExcludeFromStaticExportAttribute, RouteInventoryBuilder, StaticSiteExporter, LinkScanner, EndpointReport
-src/Kaizen.BlogEngine   MarkdownPostService (Markdig + YamlDotNet), IPostService, AddMarkdownContent(...)
+src/Kaizen.BlogEngine   MarkdownPostService (Markdig + its YamlFrontMatter extension) + FrontMatterParser, IPostService, AddMarkdownContent(...)
 src/Kaizen.Seo          SeoHead.razor, JsonLdScript.razor, JsonLd helpers, SeoOptions/AddSeo (Razor class library)
 src/Nucleics.Web        Blazor SSR site: App/Routes/MainLayout, Home/About/Learn/BlogIndex/BlogPost/NotFound, Glue/BlogRouteSource, content/posts/*.md
 tests/Kaizen.StaticSite.Tests   xunit tests for the exporter (references only Kaizen.StaticSite)
@@ -111,6 +111,12 @@ Captain decisions applied: Pages builds with `bash build.sh` (output dir `output
 - Live nucleics.org (curl) is byte-identical to `main:index.html` (4506 B) and `main:styles.css`.
 - Verified with headless Chrome (screenshots in `/workspace/shots`, box-local): with the two extra nav links removed the export is **pixel-identical** to the original at 1280×1400 and 390×2200 (light scheme); with them, pixels differ only in the nav row. Token-level HTML diff (`compare.py`): body identical except `href="#x"` → `href="/#x"` in the nav, the added links, and Blazor writing `alt` without `=""`; head differs only by the added `<base>`, canonical, OG and Twitter tags. Dark scheme was not screenshot-verified (the headless flag did not switch scheme); the dark CSS rules and `mark-dark.svg` are byte-identical.
 - Root `index.html`, `styles.css`, `assets/` deleted; `_headers` kept.
+
+## Follow-up 2026-10-04 (d): central package management, Markdig-only BlogEngine
+- `Directory.Packages.props` (`ManagePackageVersionsCentrally`) holds every version (Markdig 1.4.0 + the three test packages, exact versions as previously restored); no `PackageReference` has a `Version` (grep-verified). `dotnet restore/build/test Nucleics.slnx` pass.
+- Dependencies: `Kaizen.StaticSite` and `Kaizen.Seo` have only the `Microsoft.AspNetCore.App` framework reference; `Kaizen.BlogEngine` has Markdig only (plus the framework reference for `IServiceCollection`/`IHostEnvironment`).
+- **YamlDotNet removed.** The sample posts use only flat scalars, an inline tag list and `draft`, so front matter is now found by Markdig's `UseYamlFrontMatter()` and read by `FrontMatterParser` (~100 lines): plain/'single'/"double" scalars, `# comments`, inline `[a, b]` and block `- item` lists, `true/false`. Anything else (nested maps, `|`/`>` scalars, anchors, flow maps, duplicate keys, unterminated quotes) throws a clear error instead of being misread. Behaviour check: the export with the old YamlDotNet parser and the new one is byte-identical (`diff -r`). Tests: new `tests/Kaizen.BlogEngine.Tests` (26) + existing `Kaizen.StaticSite.Tests` (10), all passing. Known narrowing vs real YAML: no multi-line scalars, no nested structures, no YAML escapes beyond `\" \\ \n \t` in double quotes, booleans only `true/false` (not yes/no/on/off).
+- Library package version: a single `<Version>0.1.0</Version>` in `Directory.Build.props` for all projects (nothing is packed yet; per-library `<Version>` in the csproj can override when a library graduates to NuGet).
 
 ## Open questions for the captain
 1. ~~Drop ImportMap/_framework~~ — decided: dropped by default, `--keep-framework` to override.

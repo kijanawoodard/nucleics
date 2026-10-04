@@ -6,6 +6,8 @@
     <LangVersion>latest</LangVersion>
     <!-- Kaizen: no AOT, no trimming. Build-time tool + reflection. -->
     <PublishAot>false</PublishAot>
+    <!-- Library package version: one shared value for all projects (NuGet packing is not wired up yet; per-library versions can override later). -->
+    <Version>0.1.0</Version>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 </Project>

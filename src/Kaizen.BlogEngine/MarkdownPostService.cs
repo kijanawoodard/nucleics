@@ -1,23 +1,18 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Markdig;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using Markdig.Extensions.Yaml;
+using Markdig.Syntax;
 
 namespace Kaizen.BlogEngine;
 
-public sealed partial class MarkdownPostService : IPostService
+public sealed class MarkdownPostService : IPostService
 {
     private readonly MarkdownContentOptions _options;
     private readonly string _folder;
     private readonly Lazy<IReadOnlyList<Post>> _posts;
 
-    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-    private static readonly IDeserializer Yaml = new DeserializerBuilder()
-        .WithNamingConvention(CamelCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
-
-    [GeneratedRegex(@"\A\uFEFF?---[ \t]*\r?\n(?<yaml>.*?)\r?\n---[ \t]*(?:\r?\n|\z)(?<body>.*)\z", RegexOptions.Singleline)]
-    private static partial Regex FrontMatterRegex();
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseYamlFrontMatter().Build();
 
     public MarkdownPostService(MarkdownContentOptions options, string contentRoot)
     {
@@ -50,17 +45,29 @@ public sealed partial class MarkdownPostService : IPostService
 
     private Post Parse(string file)
     {
-        var text = File.ReadAllText(file);
-        var m = FrontMatterRegex().Match(text);
-        if (!m.Success) throw new InvalidOperationException($"{file}: missing YAML front matter (--- ... ---).");
-        var fm = Yaml.Deserialize<FrontMatter>(m.Groups["yaml"].Value) ?? new FrontMatter();
-        if (string.IsNullOrWhiteSpace(fm.Title)) throw new InvalidOperationException($"{file}: front matter 'title' is required.");
-        if (!TryDate(fm.Date, out var date)) throw new InvalidOperationException($"{file}: front matter 'date' is required (yyyy-MM-dd).");
-        TryDate(fm.Updated, out var updated);
-        var slug = (string.IsNullOrWhiteSpace(fm.Slug) ? Path.GetFileNameWithoutExtension(file) : fm.Slug!).Trim().ToLowerInvariant();
+        var doc = Markdown.Parse(File.ReadAllText(file), Pipeline);
+        var block = doc.Descendants<YamlFrontMatterBlock>().FirstOrDefault();   // Markdig finds the --- ... --- block
+        if (block is null) throw new InvalidOperationException($"{file}: missing YAML front matter (--- ... ---).");
+        Dictionary<string, object> fm;
+        try { fm = FrontMatterParser.Parse(block.Lines.Lines.Take(block.Lines.Count).Select(l => l.ToString()), file); }
+        catch (FormatException e) { throw new InvalidOperationException(e.Message, e); }
+
+        var title = FrontMatterParser.GetString(fm, "title");
+        if (string.IsNullOrWhiteSpace(title)) throw new InvalidOperationException($"{file}: front matter 'title' is required.");
+        var dateText = FrontMatterParser.GetString(fm, "date");
+        if (!TryDate(dateText, out var date)) throw new InvalidOperationException($"{file}: front matter 'date' is required (yyyy-MM-dd).");
+        var updatedText = FrontMatterParser.GetString(fm, "updated");
+        TryDate(updatedText, out var updated);
+        var slugText = FrontMatterParser.GetString(fm, "slug");
+        var slug = (string.IsNullOrWhiteSpace(slugText) ? Path.GetFileNameWithoutExtension(file) : slugText).Trim().ToLowerInvariant();
         if (!Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$")) throw new InvalidOperationException($"{file}: slug '{slug}' must be lowercase-kebab.");
-        return new Post(slug, fm.Title!, date, fm.Updated is null ? null : updated, fm.Description, fm.Author,
-            fm.Tags ?? new List<string>(), fm.Draft, Markdown.ToHtml(m.Groups["body"].Value, Pipeline), file)
+        bool draft;
+        try { draft = FrontMatterParser.GetBool(fm, "draft"); }
+        catch (FormatException e) { throw new InvalidOperationException($"{file}: {e.Message}", e); }
+
+        return new Post(slug, title, date, updatedText is null ? null : updated, FrontMatterParser.GetString(fm, "description"),
+            FrontMatterParser.GetString(fm, "author"), FrontMatterParser.GetList(fm, "tags") ?? new List<string>(), draft,
+            Markdown.ToHtml(doc, Pipeline), file)
         { Url = $"{_options.UrlPrefix.TrimEnd('/')}/{slug}/" };
     }
 
@@ -68,17 +75,5 @@ public sealed partial class MarkdownPostService : IPostService
     {
         d = default;
         return s is not null && DateTimeOffset.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out d);
-    }
-
-    private sealed class FrontMatter
-    {
-        public string? Title { get; set; }
-        public string? Date { get; set; }
-        public string? Updated { get; set; }
-        public string? Description { get; set; }
-        public string? Author { get; set; }
-        public string? Slug { get; set; }
-        public List<string>? Tags { get; set; }
-        public bool Draft { get; set; }
     }
 }

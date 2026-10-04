@@ -32,10 +32,11 @@ Design brief: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21). Fi
 Nucleics.slnx
 src/
   Kaizen.StaticSite/   exporter: endpoint inventory, export, check, sitemap/robots/404, asset materialisation
-  Kaizen.BlogEngine/   Markdig + YAML front matter post service (IPostService)
+  Kaizen.BlogEngine/   Markdig post service, flat YAML front matter (IPostService)
   Kaizen.Seo/          <SeoHead/> (title/description/canonical/OG/Twitter) + JSON-LD helpers
   Nucleics.Web/        the site: layout, pages, content/posts/*.md, glue (BlogRouteSource)
-tests/                 Kaizen.StaticSite.Tests (xunit; not used by build.sh)
+tests/                 Kaizen.StaticSite.Tests, Kaizen.BlogEngine.Tests (xunit; not used by build.sh)
+Directory.Packages.props  central package versions (no Version on any PackageReference)
 scripts/               verify-output.py, verify-seo.py, demo-check.sh
 ```
 
@@ -52,7 +53,7 @@ dotnet run --project src/Nucleics.Web              # normal live server (exporte
 dotnet run --project src/Nucleics.Web -- export    # write ./output  (alias: --static-export)
 dotnet run --project src/Nucleics.Web -- check     # CI gate: no files written, exit 1 on any problem
 dotnet run --project src/Nucleics.Web -- routes    # print every endpoint + the ComponentTypeMetadata filter result
-dotnet test tests/Kaizen.StaticSite.Tests          # exporter unit tests (route filter, [Authorize] skip, _headers/_redirects limits)
+dotnet test Nucleics.slnx                          # unit tests: exporter (route filter, [Authorize] skip, header limits) + blog engine (front matter, posts)
 
 python3 scripts/verify-output.py output            # serve output/ with python http.server, assert every referenced URL is HTTP 200
 python3 scripts/verify-seo.py output               # canonical / og / JSON-LD / sitemap / robots assertions
@@ -89,6 +90,7 @@ or a page that references a dropped asset. Dangling internal links fail **`check
    tags: [nuclear]
    draft: false
    ---
+   (front matter is flat `key: value`, inline `[a, b]` or `- item` lists; nested YAML is rejected with a clear error)
    Markdown body…
    ```
    The file name is the slug (`/blog/my-post/`); override with `slug:`. `draft: true` hides it from the blog and the export.
