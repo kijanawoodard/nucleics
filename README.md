@@ -76,7 +76,11 @@ python3 scripts/verify-seo.py output               # canonical / og / JSON-LD / 
 
 `export` boots the real app on a random loopback port, fetches each route with `HttpClient`, and writes
 `output/<route>/index.html`, `404.html`, `sitemap.xml`, `robots.txt`, `kaizen-manifest.json` and every static asset
-(fingerprinted `@Assets[...]` files, `_framework/*`, RCL `_content/*`). `output/` is git-ignored.
+(fingerprinted `@Assets[...]` files, RCL `_content/*`) plus `_headers` / `_redirects` copied as-is from the repo root when present. `output/` is git-ignored.
+The Blazor framework scripts (`_framework/*`) and the `<ImportMap/>` that names them are **not** exported by default: no page ships JavaScript
+(output ≈ 170 KB instead of 4.9 MB). `export --keep-framework` brings both back (needed once you add interactivity / enhanced navigation).
+`export` exits non-zero (and deletes any stale `output/`) on a non-200 route, an unhandled exception, an empty route inventory, a missing 404 probe,
+or a page that references a dropped asset. Dangling internal links fail **`check` only**; `export` just reports them.
 `check` fails (exit 1) on any non-200 route, a missing 404 page, any unreachable asset, and any internal link
 (`a/link/img/script`, canonical included) that points at something not generated. Add `--output <dir>` to change the folder.
 
@@ -107,7 +111,12 @@ python3 scripts/verify-seo.py output               # canonical / og / JSON-LD / 
 2. `dotnet run --project src/Nucleics.Web -- export` → `output/blog/my-post/index.html`, listed in `sitemap.xml` and on `/blog/`.
    The page is the single catch-all `Components/Pages/BlogPost.razor` (`@page "/blog/{slug}"`); an unknown slug returns 404.
 
-### Deploying `output/` (not wired up — spike scope)
+### Cloudflare Pages (build.sh)
 
-Cloudflare Pages: build command `dotnet run --project src/Nucleics.Web -- export` (needs the .NET 11 SDK on the build image),
-output directory `output`. No deploy config or workflow was changed on this branch.
+Cloudflare Pages settings: **Build command** `bash build.sh` · **Build output directory** `output` · root directory `/`.
+`build.sh` (POSIX `sh`, `set -e`) downloads `dotnet-install.sh`, installs the exact pinned SDK (`--version 11.0.100-rc.1.26425.128`, not a channel)
+into `./dotnet`, and runs only `./dotnet/dotnet run --project src/Nucleics.Web -c Release -- export`.
+The build image needs `curl`, `tar`/`gzip` and a shell; nothing else (no global dotnet, no Node, no libicu: `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`).
+`global.json` pins the same SDK (`rollForward: latestFeature`, prerelease allowed) so `dotnet` anywhere in the repo resolves to it; bump it together with `DOTNET_VERSION` in `build.sh` (e.g. to `11.0.100` at GA).
+`./dotnet` and `dotnet-install.sh` are git-ignored. `_headers` (repo root) and an optional `_redirects` are copied into `output/`;
+the exporter warns on stderr (never fails) beyond Cloudflare's limits: `_headers` 100 rules / 2,000-char lines; `_redirects` 2,000 static + 100 dynamic (splat `*` or `:placeholder`) / 1,000-char lines / statics should precede dynamics.
