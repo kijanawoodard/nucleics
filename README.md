@@ -29,7 +29,7 @@ A **Blazor SSR → flat files** build on **.NET 11** (no WASM, no interactive re
 Design brief: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21). Findings: [docs/kaizen-spike-notes.md](docs/kaizen-spike-notes.md).
 
 ```
-Nucleics.sln
+Nucleics.slnx
 src/
   Kaizen.StaticSite/   exporter: endpoint inventory, export, check, sitemap/robots/404, asset materialisation
   Kaizen.BlogEngine/   Markdig + YAML front matter post service (IPostService)
@@ -47,7 +47,7 @@ wires them together (`Glue/BlogRouteSource.cs` adapts the blog's `IPostService` 
 Requires the .NET 11 SDK (`dotnet-install.sh --channel 11.0 --quality preview`; tested with 11.0.100-rc.1).
 
 ```bash
-dotnet build Nucleics.sln                          # compile everything
+dotnet build Nucleics.slnx                          # compile everything
 dotnet run --project src/Nucleics.Web              # normal live server (exporter inactive)
 dotnet run --project src/Nucleics.Web -- export    # write ./output  (alias: --static-export)
 dotnet run --project src/Nucleics.Web -- check     # CI gate: no files written, exit 1 on any problem

@@ -11,7 +11,7 @@ Plan: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21) (body + two
 
 ## Layout
 ```
-Nucleics.sln
+Nucleics.slnx
 src/Kaizen.StaticSite   exporter. IStaticRouteSource, ExcludeFromStaticExportAttribute, RouteInventoryBuilder, StaticSiteExporter, LinkScanner, EndpointReport
 src/Kaizen.BlogEngine   MarkdownPostService (Markdig + YamlDotNet), IPostService, AddMarkdownContent(...)
 src/Kaizen.Seo          SeoHead.razor, JsonLdScript.razor, JsonLd helpers, SeoOptions/AddSeo (Razor class library)
@@ -64,7 +64,7 @@ Glue: `Glue/BlogRouteSource : IStaticRouteSource` (Template `/blog/{slug}`) in t
 - `export` fails (exit 1, **writes nothing**) on any non-200 route; dangling links are only reported in export (as in the plan: crawl is report-only), but are fatal in `check` (`FailOnBrokenLinksInCheck`, default true).
 
 ## Gotchas / workarounds
-- **`dotnet new sln` now makes `.slnx`**; I used `--format sln` (classic). `dotnet sln add … --solution-folder src` **failed for the web project** in RC1 ("Solution folder 'src' already contains a project with the filename 'Kaizen.StaticSite.csproj'" — it seems to walk project references); worked with `--in-root`. So `Nucleics.Web` sits at the solution root while the libs are in the `src` solution folder. Cosmetic.
+- **Solution format**: started as classic `.sln` (`dotnet sln add … --solution-folder src` failed for the web project in RC1: "Solution folder 'src' already contains a project with the filename 'Kaizen.StaticSite.csproj'"; it seems to walk project references). Migrated to **`Nucleics.slnx`** with `dotnet sln migrate` (works in RC1), then hand-edited the XML to the intended layout: `/src/` (all four projects) and `/tests/`; the generated x64/x86 platform entries were dropped. `.sln` deleted.
 - **cwd/content root under `dotnet run --project X`** is the project folder, not the invoker's cwd → a relative `output` would land in `src/Nucleics.Web/output`. `AddStaticSite` anchors relative `OutputPath` at the nearest dir containing a `.sln`/`.slnx`/`.git`. Content root (for `content/posts`) = project dir; `content/**` is copied to output/publish via `<Content … CopyToOutputDirectory>`.
 - **`UseStatusCodePagesWithReExecute("/not-found")` + `NotFoundPage`**: works for both unmatched URLs and `NavigationManager.NotFound()`; the re-executed page's canonical would be `/not-found/` so `SeoHead` omits canonical/og:url when `NoIndex` (found by the asset/link verifier: 404.html's canonical pointed at an ungenerated URL).
 - **`<script type="application/ld+json">` rendered by Blazor is attribute-encoded** (`ld&#x2B;json`). Browsers/Google decode it but naive parsers wouldn't; `JsonLdScript` emits the whole element as `MarkupString` to keep a literal `+`. `JsonLd.Serialize` uses the default encoder, which escapes `<`, `>`, `&` so a post title can't break out of the script element.
@@ -102,7 +102,7 @@ Captain decisions applied: Pages builds with `bash build.sh` (output dir `output
 
 ## Follow-up 2026-10-04 (b): merge prep
 - `/admin` stub page and the stub cookie auth/authorization wiring removed from `Nucleics.Web`; the `[Authorize]`-skip logic and `--include-auth` stay in the exporter. `scripts/demo-check.sh` and `docs/spike5-check-demo.txt` no longer mention the stub.
-- New `tests/Kaizen.StaticSite.Tests` (xunit 2.9, Microsoft.NET.Test.Sdk, references only `Kaizen.StaticSite`), added to `Nucleics.sln`. `build.sh` runs `dotnet run --project src/Nucleics.Web`, which builds only the site and its three libraries, so tests are neither built nor needed on Cloudflare.
+- New `tests/Kaizen.StaticSite.Tests` (xunit 2.9, Microsoft.NET.Test.Sdk, references only `Kaizen.StaticSite`), added to `Nucleics.slnx`. `build.sh` runs `dotnet run --project src/Nucleics.Web`, which builds only the site and its three libraries, so tests are neither built nor needed on Cloudflare.
 - `build.sh` is committed as mode 100755; `./build.sh` runs directly.
 
 ## Open questions for the captain
