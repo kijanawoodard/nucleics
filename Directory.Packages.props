@@ -4,8 +4,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Kaizen.BlogEngine (the only library with a package dependency) -->
+    <!-- Kaizen.BlogEngine (the only library with package dependencies: Markdig + YamlDotNet) -->
     <PackageVersion Include="Markdig" Version="1.4.0" />
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <!-- tests only -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />

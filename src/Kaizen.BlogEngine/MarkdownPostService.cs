@@ -47,29 +47,24 @@ public sealed class MarkdownPostService : IPostService
     {
         var doc = Markdown.Parse(File.ReadAllText(file), Pipeline);
         var block = doc.Descendants<YamlFrontMatterBlock>().FirstOrDefault();   // Markdig finds the --- ... --- block
-        if (block is null) throw new InvalidOperationException($"{file}: missing YAML front matter (--- ... ---).");
-        Dictionary<string, object> fm;
-        try { fm = FrontMatterParser.Parse(block.Lines.Lines.Take(block.Lines.Count).Select(l => l.ToString()), file); }
-        catch (FormatException e) { throw new InvalidOperationException(e.Message, e); }
+        if (block is null) throw new InvalidOperationException($"{file}: missing or empty YAML front matter (--- ... ---); 'title' and 'date' are required.");
+        var yaml = string.Join("\n", block.Lines.Lines.Take(block.Lines.Count).Select(l => l.ToString()));
+        var fm = FrontMatterParser.Parse(yaml, file, fenceLine: block.Line + 1);
 
-        var title = FrontMatterParser.GetString(fm, "title");
+        var title = fm.Title?.Trim();
         if (string.IsNullOrWhiteSpace(title)) throw new InvalidOperationException($"{file}: front matter 'title' is required.");
-        var dateText = FrontMatterParser.GetString(fm, "date");
-        if (!TryDate(dateText, out var date)) throw new InvalidOperationException($"{file}: front matter 'date' is required (yyyy-MM-dd).");
-        var updatedText = FrontMatterParser.GetString(fm, "updated");
-        TryDate(updatedText, out var updated);
-        var slugText = FrontMatterParser.GetString(fm, "slug");
-        var slug = (string.IsNullOrWhiteSpace(slugText) ? Path.GetFileNameWithoutExtension(file) : slugText).Trim().ToLowerInvariant();
+        if (!TryDate(fm.Date, out var date)) throw new InvalidOperationException($"{file}: front matter 'date' is required (yyyy-MM-dd or ISO date-time).");
+        var hasUpdated = TryDate(fm.Updated, out var updated);
+        if (!string.IsNullOrWhiteSpace(fm.Updated) && !hasUpdated) throw new InvalidOperationException($"{file}: front matter 'updated' is not a date: '{fm.Updated}'.");
+        var slug = (string.IsNullOrWhiteSpace(fm.Slug) ? Path.GetFileNameWithoutExtension(file) : fm.Slug).Trim().ToLowerInvariant();
         if (!Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$")) throw new InvalidOperationException($"{file}: slug '{slug}' must be lowercase-kebab.");
-        bool draft;
-        try { draft = FrontMatterParser.GetBool(fm, "draft"); }
-        catch (FormatException e) { throw new InvalidOperationException($"{file}: {e.Message}", e); }
 
-        return new Post(slug, title, date, updatedText is null ? null : updated, FrontMatterParser.GetString(fm, "description"),
-            FrontMatterParser.GetString(fm, "author"), FrontMatterParser.GetList(fm, "tags") ?? new List<string>(), draft,
-            Markdown.ToHtml(doc, Pipeline), file)
+        return new Post(slug, title, date, hasUpdated ? updated : null, NullIfBlank(fm.Description), NullIfBlank(fm.Author),
+            fm.Tags ?? new List<string>(), fm.Draft, Markdown.ToHtml(doc, Pipeline), file)
         { Url = $"{_options.UrlPrefix.TrimEnd('/')}/{slug}/" };
     }
+
+    private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     private static bool TryDate(string? s, out DateTimeOffset d)
     {

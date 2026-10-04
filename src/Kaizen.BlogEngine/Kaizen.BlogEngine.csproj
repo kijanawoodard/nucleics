@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>Kaizen.BlogEngine: Markdig-based post service (flat YAML front matter) for Blazor SSR.</Description>
+    <Description>Kaizen.BlogEngine: Markdig + YamlDotNet post service (YAML front matter) for Blazor SSR.</Description>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Markdig" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 </Project>

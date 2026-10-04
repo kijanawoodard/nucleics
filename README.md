@@ -32,7 +32,7 @@ Design brief: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21). Fi
 Nucleics.slnx
 src/
   Kaizen.StaticSite/   exporter: endpoint inventory, export, check, sitemap/robots/404, asset materialisation
-  Kaizen.BlogEngine/   Markdig post service, flat YAML front matter (IPostService)
+  Kaizen.BlogEngine/   Markdig + YamlDotNet post service, YAML front matter (IPostService)
   Kaizen.Seo/          <SeoHead/> (title/description/canonical/OG/Twitter) + JSON-LD helpers
   Nucleics.Web/        the site: layout, pages, content/posts/*.md, glue (BlogRouteSource)
 tests/                 Kaizen.StaticSite.Tests, Kaizen.BlogEngine.Tests (xunit; not used by build.sh)
@@ -94,7 +94,7 @@ See it working without touching the repo: `scripts/demo-blog.sh` (publishes a co
    tags: [nuclear]
    draft: false
    ---
-   (front matter is flat `key: value`, inline `[a, b]` or `- item` lists; nested YAML is rejected with a clear error)
+   (front matter is standard YAML read by YamlDotNet; allowed keys: title, date, updated, description, author, slug, tags, draft — see below)
    Markdown body…
    ```
    The file name is the slug (`/blog/my-post/`); override with `slug:`. `draft: true` hides it from the blog and the export.
@@ -102,6 +102,12 @@ See it working without touching the repo: `scripts/demo-blog.sh` (publishes a co
    but the nav has no Blog link by design: add `<a href="@Home/blog/">Blog</a>`-style link to `MainLayout.razor` (a plain `/blog/` is fine) when you want it, and review the sample's copy first.
 2. `dotnet run --project src/Nucleics.Web -- export` → `output/blog/my-post/index.html`, listed in `sitemap.xml` and on `/blog/`.
    The page is the single catch-all `Components/Pages/BlogPost.razor` (`@page "/blog/{slug}"`); an unknown slug returns 404.
+
+Front matter (YamlDotNet, strict): `title` and `date` are required; `date`/`updated` are an ISO date (`2026-10-01`) or date-time (`2026-10-01T09:30:00Z`, `2026-10-01 09:30:00`);
+`tags` is an inline `[a, b]` or a dash list; text values may be plain, `'single'` or `"double"` quoted, or multi-line (`|` literal, `>` folded); `draft: true|false`; `#` comments are fine.
+**Anything else is an error, never skipped**: an unknown key (a typo like `dratf:`), malformed YAML, a wrong type (`draft: maybe`, `tags: single`), a duplicate key or a missing/empty block throws
+`<file>, line N: invalid front matter: …` (e.g. `…/bad.md, line 4: invalid front matter: unknown key 'dratf' (allowed, lowercase camelCase: title, date, …)`), which fails `export` and `check` with exit 1 (and the live site on first use).
+Drafts are validated too. Demo: `scripts/demo-malformed-post.sh` (evidence in `docs/malformed-post-demo.txt`).
 
 ### Cloudflare Pages (build.sh)
 

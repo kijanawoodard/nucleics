@@ -1,125 +1,65 @@
-using System.Globalization;
+using System.Text.RegularExpressions;
+using YamlDotNet.Core;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Kaizen.BlogEngine;
 
+/// <summary>The typed model of a post's YAML front matter. Property names map to camelCase keys (title, date, updated, ...).</summary>
+public sealed class FrontMatter
+{
+    public string? Title { get; set; }
+    /// <summary>ISO date (2026-10-01) or date-time (2026-10-01T09:30:00Z). Kept as text so no time-zone shifting happens while reading.</summary>
+    public string? Date { get; set; }
+    public string? Updated { get; set; }
+    public string? Description { get; set; }
+    public string? Author { get; set; }
+    public string? Slug { get; set; }
+    public List<string> Tags { get; set; } = new();
+    public bool Draft { get; set; }
+}
+
 /// <summary>
-/// Deliberately tiny parser for the FLAT subset of YAML that post front matter uses:
-///   key: scalar            (plain, 'single' or "double" quoted; # comments after whitespace are ignored)
-///   key: [a, b, "c d"]     (inline list)
-///   key:                   (block list on the following lines)
-///     - a
-///     - b
-///   key: true|false        (read with <see cref="GetBool"/>)
-/// Anything else (nested maps, multi-line scalars | and >, anchors, tags, flow maps) is rejected with a clear error
-/// rather than silently misread. Markdig's YamlFrontMatter extension finds the block; this class reads its lines.
+/// Reads the YAML found by Markdig's YamlFrontMatter extension into <see cref="FrontMatter"/> with YamlDotNet.
+/// Standard YAML is supported (plain/quoted scalars, inline [a, b] and dash lists, | and > multi-line text, comments).
+/// Policy: STRICT. An unknown key (typo such as "dratf"), malformed YAML, a wrong type (draft: maybe, tags: scalar) or a duplicate key
+/// throws an <see cref="InvalidOperationException"/> that names the file and the line; nothing is ever skipped silently.
 /// </summary>
 public static class FrontMatterParser
 {
-    public static Dictionary<string, object> Parse(IEnumerable<string> lines, string source = "front matter")
+    private static readonly IDeserializer Deserializer = new DeserializerBuilder()
+        .WithNamingConvention(CamelCaseNamingConvention.Instance)   // Title <-> title, and e.g. PublishedAt <-> publishedAt
+        .WithDuplicateKeyChecking()                                  // a repeated key is an error, not "last one wins"
+        .Build();                                                    // IgnoreUnmatchedProperties NOT set: unknown keys are errors
+
+    /// <param name="yaml">The YAML between the --- fences (without them).</param>
+    /// <param name="source">File path used in error messages.</param>
+    /// <param name="fenceLine">1-based line of the opening --- in the file, so YAML line k is reported as file line fenceLine + k.</param>
+    public static FrontMatter Parse(string yaml, string source = "front matter", int fenceLine = 0)
     {
-        var result = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        string? openList = null;
-        var n = 0;
-        foreach (var raw in lines)
+        if (string.IsNullOrWhiteSpace(yaml)) return new FrontMatter();   // empty block: required-field checks then say what is missing
+        try
         {
-            n++;
-            var line = raw.TrimEnd('\r', '\n');
-            var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith('#')) continue;
-
-            if (char.IsWhiteSpace(line[0]) || trimmed.StartsWith("- ") || trimmed == "-")
-            {
-                // only valid as an item of a block list opened by a bare "key:"
-                if (openList is null || !(trimmed.StartsWith("- ") || trimmed == "-"))
-                    throw new FormatException($"{source}, line {n}: unsupported YAML (indentation / nesting): '{trimmed}'. Only flat key: value pairs and simple lists are supported.");
-                ((List<string>)result[openList]).Add(Scalar(trimmed.Length > 1 ? trimmed[2..] : "", source, n));
-                continue;
-            }
-
-            openList = null;
-            var colon = FindKeyColon(line);
-            if (colon <= 0) throw new FormatException($"{source}, line {n}: expected 'key: value', got '{trimmed}'.");
-            var key = line[..colon].Trim();
-            var value = StripComment(line[(colon + 1)..]).Trim();
-            if (result.ContainsKey(key)) throw new FormatException($"{source}, line {n}: duplicate key '{key}'.");
-
-            if (value.Length == 0) { result[key] = new List<string>(); openList = key; }   // "key:" opens a block list; stays empty if no items follow
-            else if (value[0] == '[') result[key] = InlineList(value, source, n);
-            else if (value[0] is '{' or '|' or '>' or '&' or '*' or '!') throw new FormatException($"{source}, line {n}: unsupported YAML value '{value}'.");
-            else result[key] = Scalar(value, source, n);
+            return Deserializer.Deserialize<FrontMatter?>(yaml) ?? new FrontMatter();
         }
-        return result;
-    }
-
-    public static string? GetString(Dictionary<string, object> d, string key) =>
-        d.TryGetValue(key, out var v) ? v switch { string s => s, List<string> l when l.Count == 0 => null, _ => throw new FormatException($"'{key}' must be a single value.") } : null;
-
-    public static List<string>? GetList(Dictionary<string, object> d, string key) =>
-        d.TryGetValue(key, out var v) ? v switch { List<string> l => l, string s => new List<string> { s }, _ => null } : null;
-
-    public static bool GetBool(Dictionary<string, object> d, string key)
-    {
-        var s = GetString(d, key);
-        if (s is null) return false;
-        return s.ToLowerInvariant() switch
+        catch (YamlException e)
         {
-            "true" => true,
-            "false" => false,
-            _ => throw new FormatException($"'{key}' must be true or false, got '{s}'."),
-        };
-    }
-
-    private static int FindKeyColon(string line)
-    {
-        for (var i = 0; i < line.Length; i++)
-            if (line[i] == ':' && (i + 1 == line.Length || char.IsWhiteSpace(line[i + 1]))) return i;
-        return -1;
-    }
-
-    private static string StripComment(string s)
-    {
-        char? quote = null;
-        for (var i = 0; i < s.Length; i++)
-        {
-            var c = s[i];
-            if (quote is null && (c == '"' || c == '\'') && s[..i].Trim().Length == 0) quote = c;
-            else if (quote == c) quote = null;
-            else if (quote is null && c == '#' && (i == 0 || char.IsWhiteSpace(s[i - 1]))) return s[..i];
-        }
-        return s;
-    }
-
-    private static string Scalar(string s, string source, int line)
-    {
-        s = StripComment(s).Trim();
-        if (s.Length >= 2 && s[0] == '"' && s[^1] == '"')
-            return s[1..^1].Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("\\n", "\n").Replace("\\t", "\t");
-        if (s.Length >= 2 && s[0] == '\'' && s[^1] == '\'') return s[1..^1].Replace("''", "'");
-        if (s.Length > 0 && (s[0] == '"' || s[0] == '\'')) throw new FormatException($"{source}, line {line}: unterminated quote in '{s}'.");
-        return s;
-    }
-
-    private static List<string> InlineList(string value, string source, int line)
-    {
-        if (value[^1] != ']') throw new FormatException($"{source}, line {line}: inline list must end with ']' on the same line: '{value}'.");
-        var inner = value[1..^1];
-        var items = new List<string>();
-        var cur = new System.Text.StringBuilder();
-        char? quote = null;
-        foreach (var c in inner)
-        {
-            if (quote is null && (c == '"' || c == '\'')) { quote = c; cur.Append(c); }
-            else if (quote == c) { quote = null; cur.Append(c); }
-            else if (quote is null && c == ',') { Flush(); }
-            else cur.Append(c);
-        }
-        Flush();
-        return items;
-
-        void Flush()
-        {
-            var t = cur.ToString().Trim(); cur.Clear();
-            if (t.Length > 0) items.Add(Scalar(t, source, line));
+            var line = e.Start.Line > 0 ? $", line {fenceLine + (int)e.Start.Line}" : "";
+            throw new InvalidOperationException($"{source}{line}: invalid front matter: {Friendly(e)}", e);
         }
     }
+
+    private static string Friendly(YamlException e)
+    {
+        var m = e.InnerException?.Message ?? e.Message;
+        m = Regex.Replace(m, @"^\(Line:.*?\):\s*", "");   // YamlDotNet's own position prefix; ours is already in the message
+        var unknown = Regex.Match(m, @"^Property '([^']+)' not found");
+        if (unknown.Success)
+            return $"unknown key '{unknown.Groups[1].Value}' (allowed, lowercase camelCase: {Allowed}); keys are case-sensitive and typos are errors, not ignored.";
+        if (m.StartsWith("Invalid cast") || m.StartsWith("No node deserializer"))
+            return $"value has the wrong shape or type for its key (tags must be a list, e.g. [a, b] or '- a' lines; text keys take one text value; draft is true/false)";
+        return m;
+    }
+
+    private const string Allowed = "title, date, updated, description, author, slug, tags, draft";
 }
