@@ -100,6 +100,16 @@ public sealed class StaticSiteExporter
         foreach (var d in dangling) _log.WriteLine($"  LINK {d}");
         var linkFailures = mode == StaticSiteMode.Check && _o.FailOnBrokenLinksInCheck ? dangling : new List<string>();
 
+        // 4b) compare against an existing export (report-only): routes the inventory knows but output/ lacks, and vice versa
+        var manifestPath = Path.Combine(outRoot, "kaizen-manifest.json");
+        if (mode == StaticSiteMode.Check && File.Exists(manifestPath))
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            var written = doc.RootElement.GetProperty("pages").EnumerateArray().Select(e => e.GetProperty("Path").GetString()!).ToHashSet(StringComparer.Ordinal);
+            foreach (var p in pages.Keys.Except(written).Order(StringComparer.Ordinal)) _log.WriteLine($"  STALE route {p} is discovered but missing from {_o.OutputPath} (re-run export)");
+            foreach (var p in written.Except(pages.Keys).Order(StringComparer.Ordinal)) _log.WriteLine($"  STALE route {p} is in {_o.OutputPath} but no longer discovered");
+        }
+
         // 5) write
         if (mode == StaticSiteMode.Export && failures.Count == 0)
         {

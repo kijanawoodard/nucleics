@@ -20,6 +20,7 @@ public static class StaticSiteExtensions
         if (i >= 0 && i + 1 < args.Length) options.OutputPath = args[i + 1];
         if (!Path.IsPathRooted(options.OutputPath))
             options.OutputPath = Path.Combine(FindRepoRoot(builder.Environment.ContentRootPath), options.OutputPath);
+        if (args.Contains("--include-auth")) options.ExcludeAuthorizedPages = false; // demo/diagnostics: export runs anonymous, expect failures
         builder.Services.AddSingleton(options);
         if (IsStaticCommand(args))
         {
