@@ -4,6 +4,7 @@
   --instrument: #6b6e73;
   --crt: #3d5a4c;
   --amber: #c9852a;
+  --amber-text: #8a5a14;
   --hairline: rgba(43, 43, 43, 0.14);
   --card: rgba(255, 255, 255, 0.45);
   --max: 52rem;
@@ -18,6 +19,7 @@
     --instrument: #9a9ea5;
     --crt: #7a9e8c;
     --amber: #d49437;
+    --amber-text: #d49437;
     --hairline: rgba(220, 216, 208, 0.14);
     --card: rgba(255, 255, 255, 0.04);
   }
@@ -138,7 +140,7 @@ main {
   font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 .hero h1 {
@@ -199,7 +201,7 @@ main {
 
 .text-link:hover,
 .text-link:focus-visible {
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 .metric {
