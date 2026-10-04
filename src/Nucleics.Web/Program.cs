@@ -1,8 +1,25 @@
+using Kaizen.BlogEngine;
+using Kaizen.Seo;
 using Kaizen.StaticSite;
 using Nucleics.Web.Components;
+using Nucleics.Web.Glue;
+
+const string SiteUrl = "https://nucleics.org";
 
 var builder = WebApplication.CreateBuilder(args);
-builder.AddStaticSite(args, o => o.SiteUrl = "https://nucleics.org");
+
+// The site is the only place the three libraries meet.
+builder.AddStaticSite(args, o => o.SiteUrl = SiteUrl);                       // Kaizen.StaticSite
+builder.Services.AddMarkdownContent("content/posts", urlPrefix: "/blog");    // Kaizen.BlogEngine
+builder.Services.AddSeo(o =>                                                 // Kaizen.Seo
+{
+    o.SiteUrl = SiteUrl;
+    o.SiteName = "Nucleics";
+    o.Organization = new OrganizationInfo("Nucleics", Logo: "/assets/favicon-64.png",
+        Description: "Advocacy for nuclear abundance: 100 MWh of electricity per person per year.");
+});
+builder.Services.AddSingleton<IStaticRouteSource, BlogRouteSource>();        // glue
+
 builder.Services.AddRazorComponents();
 
 var app = builder.Build();

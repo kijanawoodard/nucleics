@@ -1,0 +1,106 @@
+@inject NavigationManager Nav
+@inject SeoOptions Options
+
+@* One component per page: <title>, description, canonical, Open Graph, Twitter and JSON-LD, hoisted into <head> via HeadOutlet. *@
+<PageTitle>@Title</PageTitle>
+<HeadContent>
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <meta name="description" content="@Description" />
+    }
+    @if (NoIndex)
+    {
+        @* noindex pages (e.g. the 404 page) get no canonical / og:url: they must not point at a URL that is not exported *@
+        <meta name="robots" content="noindex,follow" />
+    }
+    else
+    {
+        <link rel="canonical" href="@CanonicalUrl" />
+    }
+    <meta property="og:site_name" content="@Options.SiteName" />
+    <meta property="og:locale" content="@Options.Locale" />
+    <meta property="og:type" content="@Type" />
+    <meta property="og:title" content="@Title" />
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <meta property="og:description" content="@Description" />
+    }
+    @if (!NoIndex)
+    {
+        <meta property="og:url" content="@CanonicalUrl" />
+    }
+    @if (ImageUrl is not null)
+    {
+        <meta property="og:image" content="@ImageUrl" />
+    }
+    <meta name="twitter:card" content="@(ImageUrl is null ? "summary" : "summary_large_image")" />
+    <meta name="twitter:title" content="@Title" />
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <meta name="twitter:description" content="@Description" />
+    }
+    @if (ImageUrl is not null)
+    {
+        <meta name="twitter:image" content="@ImageUrl" />
+    }
+    @if (!string.IsNullOrWhiteSpace(Options.TwitterSite))
+    {
+        <meta name="twitter:site" content="@Options.TwitterSite" />
+    }
+    @if (Type == "article")
+    {
+        @if (Published is not null)
+        {
+            <meta property="article:published_time" content="@Published.Value.ToString("o")" />
+        }
+        @if (Modified is not null)
+        {
+            <meta property="article:modified_time" content="@Modified.Value.ToString("o")" />
+        }
+        @foreach (var tag in Tags ?? Array.Empty<string>())
+        {
+            <meta property="article:tag" content="@tag" />
+        }
+    }
+    @if (Options.Organization is { } org)
+    {
+        <JsonLdScript Data="@JsonLd.Organization(org.Name, Options.SiteUrl, AbsoluteUrl(org.Logo), org.SameAs, org.Description)" />
+    }
+    @foreach (var data in JsonLdData ?? Array.Empty<object>())
+    {
+        <JsonLdScript Data="data" />
+    }
+</HeadContent>
+
+@code {
+    /// <summary>Full page title (used for &lt;title&gt;, og:title, twitter:title).</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Description { get; set; }
+    /// <summary>"website" (default) or "article".</summary>
+    [Parameter] public string Type { get; set; } = "website";
+    /// <summary>Root-relative path for canonical (e.g. "/about"). Defaults to the current request path.</summary>
+    [Parameter] public string? Path { get; set; }
+    [Parameter] public string? Image { get; set; }
+    [Parameter] public DateTimeOffset? Published { get; set; }
+    [Parameter] public DateTimeOffset? Modified { get; set; }
+    [Parameter] public IEnumerable<string>? Tags { get; set; }
+    [Parameter] public bool NoIndex { get; set; }
+    /// <summary>Extra JSON-LD objects (e.g. BlogPosting, BreadcrumbList) built with <see cref="Kaizen.Seo.JsonLd"/>.</summary>
+    [Parameter] public IEnumerable<object>? JsonLdData { get; set; }
+
+    private string CanonicalUrl => Options.SiteUrl + CanonicalPath;
+    private string? ImageUrl => AbsoluteUrl(Image ?? Options.DefaultImage);
+
+    private string CanonicalPath
+    {
+        get
+        {
+            var p = Path ?? "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0];
+            p = "/" + p.Trim('/');
+            return Options.TrailingSlash && p != "/" ? p + "/" : p;
+        }
+    }
+
+    private string? AbsoluteUrl(string? u) =>
+        string.IsNullOrWhiteSpace(u) ? null : u.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? u : Options.SiteUrl + "/" + u.TrimStart('/');
+}

@@ -1,0 +1,43 @@
+@page "/blog/{slug}"
+@inject IPostService Posts
+@inject NavigationManager Nav
+@inject SeoOptions Seo
+
+@if (post is not null)
+{
+    <SeoHead Title="@($"{post.Title} — Nucleics")"
+             Description="@post.Description"
+             Type="article"
+             Path="@post.Url"
+             Published="post.Date"
+             Modified="post.Updated"
+             Tags="post.Tags"
+             JsonLdData="JsonLdFor(post)" />
+
+    <article class="hero">
+        <p class="eyebrow"><a class="text-link" href="/blog/">Blog</a> · <time datetime="@post.Date.ToString("yyyy-MM-dd")">@post.Date.ToString("yyyy-MM-dd")</time></p>
+        <h1>@post.Title</h1>
+        <div class="lede post-body">@((MarkupString)post.Html)</div>
+    </article>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+    private Post? post;
+
+    protected override void OnInitialized()
+    {
+        post = Posts.GetBySlug(Slug);
+        if (post is null) Nav.NotFound(); // static SSR: HTTP 404 + NotFoundPage
+    }
+
+    private object[] JsonLdFor(Post p)
+    {
+        var url = Seo.SiteUrl + p.Url;
+        return new object[]
+        {
+            JsonLd.BlogPosting(p.Title, url, p.Date, p.Description, p.Updated, p.Author, "Nucleics", keywords: p.Tags),
+            JsonLd.BreadcrumbList(("Home", Seo.SiteUrl + "/"), ("Blog", Seo.SiteUrl + "/blog/"), (p.Title, url)),
+        };
+    }
+}

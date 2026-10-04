@@ -1,0 +1,8 @@
+@* Renders one JSON-LD block. Place inside <HeadContent> (SeoHead does this for you).
+   The whole element is emitted as markup so the type attribute stays a literal "application/ld+json"
+   (Blazor would otherwise HTML-encode the '+' as &#x2B; inside the attribute). *@
+@((MarkupString)$"<script type=\"application/ld+json\">{Kaizen.Seo.JsonLd.Serialize(Data)}</script>")
+
+@code {
+    [Parameter, EditorRequired] public object Data { get; set; } = default!;
+}
