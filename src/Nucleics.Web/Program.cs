@@ -20,6 +20,10 @@ builder.Services.AddSeo(o =>                                                 // 
 });
 builder.Services.AddSingleton<IStaticRouteSource, BlogRouteSource>();        // glue: /blog/{slug} per published post
 builder.Services.AddSingleton<IStaticPageGate, BlogIndexGate>();             // glue: /blog only if there is a post
+builder.Services.AddSingleton(sp => new SitePages(new MarkdownPostService(                                     // web pages: content/pages/*.md -> /{slug}/
+    new MarkdownContentOptions { ContentPath = builder.Configuration["Pages:ContentPath"] ?? "content/pages", UrlPrefix = "" },
+    sp.GetRequiredService<IHostEnvironment>().ContentRootPath)));
+builder.Services.AddSingleton<IStaticRouteSource, PageRouteSource>();        // glue: /{slug} per published web page
 
 builder.Services.AddRazorComponents();
 

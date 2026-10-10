@@ -2,10 +2,10 @@
 title: Why nuclear? Start with energy density
 date: 2026-10-01
 draft: false
+layout: page
 updated: 2026-10-10
 description: A fingertip-sized uranium pellet holds as much energy as a ton of coal. Density is most of the argument, and land use is the rest.
 author: Kijana Woodard
-tags: [nuclear, energy-density, abundance]
 ---
 
 ## The comic that started it

@@ -318,3 +318,5 @@ main {
     gap: 1rem;
   }
 }
+
+.page-dates { font-size: 0.85rem; opacity: 0.75; margin: 0.25rem 0 1.5rem; }
