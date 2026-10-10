@@ -32,6 +32,19 @@ public static class JsonLd
             ["keywords"] = keywords?.ToArray() is { Length: > 0 } k ? string.Join(", ", k) : null,
         });
 
+    /// <summary>An evergreen web page with its published/modified dates (modified falls back to published).</summary>
+    public static Dictionary<string, object?> WebPage(string name, string url, DateTimeOffset published,
+        string? description = null, DateTimeOffset? modified = null, string? authorName = null, string? publisherName = null)
+        => Clean(new()
+        {
+            ["@context"] = Ctx, ["@type"] = "WebPage", ["name"] = name, ["url"] = url,
+            ["datePublished"] = published.ToString("yyyy-MM-dd'T'HH:mm:sszzz"),
+            ["dateModified"] = (modified ?? published).ToString("yyyy-MM-dd'T'HH:mm:sszzz"),
+            ["description"] = description,
+            ["author"] = authorName is null ? null : new Dictionary<string, object?> { ["@type"] = "Person", ["name"] = authorName },
+            ["publisher"] = publisherName is null ? null : new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = publisherName },
+        });
+
     public static Dictionary<string, object?> BreadcrumbList(params (string Name, string Url)[] items)
         => new()
         {

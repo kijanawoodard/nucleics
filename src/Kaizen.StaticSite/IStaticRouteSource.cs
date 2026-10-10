@@ -11,4 +11,10 @@ public interface IStaticRouteSource
 
     /// <summary>One dictionary per page to export, keyed by route parameter name (e.g. { "slug": "hello" }).</summary>
     IAsyncEnumerable<IReadOnlyDictionary<string, string>> GetRouteValuesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Optional honest last-modified date for one expanded route (the same values <see cref="GetRouteValuesAsync"/> yielded),
+    /// written as the route's sitemap &lt;lastmod&gt;. Return null (the default) to omit lastmod. Never return a build timestamp.
+    /// </summary>
+    DateTimeOffset? GetLastModified(IReadOnlyDictionary<string, string> routeValues) => null;
 }

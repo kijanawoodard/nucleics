@@ -34,6 +34,10 @@ public sealed class ItemSource : IStaticRouteSource
         yield return new Dictionary<string, string> { ["id"] = "b c" };
         await Task.CompletedTask;
     }
+
+    /// <summary>Item "a" has a date; "b c" has none, so it must get no lastmod.</summary>
+    public DateTimeOffset? GetLastModified(IReadOnlyDictionary<string, string> routeValues) =>
+        routeValues["id"] == "a" ? new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero) : null;
 }
 
 public sealed class GateOff : IStaticPageGate

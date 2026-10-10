@@ -18,6 +18,10 @@ public sealed class BlogRouteSource(IPostService posts) : IStaticRouteSource
             yield return new Dictionary<string, string> { ["slug"] = p.Slug };
         await Task.CompletedTask;
     }
+
+    /// <summary>Sitemap lastmod: the hand-set <c>updated</c> date, else <c>date</c>.</summary>
+    public DateTimeOffset? GetLastModified(IReadOnlyDictionary<string, string> routeValues) =>
+        posts.GetBySlug(routeValues["slug"]) is { } p ? p.Updated ?? p.Date : null;
 }
 
 /// <summary>

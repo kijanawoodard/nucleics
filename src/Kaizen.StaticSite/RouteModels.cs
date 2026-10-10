@@ -3,7 +3,11 @@ namespace Kaizen.StaticSite;
 public enum RouteOrigin { Direct, Expanded, Extra }
 
 /// <summary>A concrete URL path that will be exported.</summary>
-public sealed record StaticRoute(string Path, string Template, RouteOrigin Origin, Type? Component);
+public sealed record StaticRoute(string Path, string Template, RouteOrigin Origin, Type? Component)
+{
+    /// <summary>Sitemap &lt;lastmod&gt; supplied by the route source; null means omit (e.g. the home page).</summary>
+    public DateTimeOffset? LastModified { get; init; }
+}
 
 /// <summary>A page endpoint that was discovered but deliberately not exported.</summary>
 public sealed record ExcludedRoute(string Template, string Reason, Type? Component);

@@ -34,6 +34,16 @@ public sealed class PostServiceTests : IDisposable
     }
 
     [Fact]
+    public void Page_layout_and_updated_are_exposed_and_empty_prefix_gives_top_level_url()
+    {
+        Write("why.md", "---\ntitle: Why\ndate: 2026-10-01\nupdated: 2026-10-10\nlayout: page\n---\nBody\n");
+        var p = Assert.Single(Service("").GetAll());
+        Assert.Equal("/why/", p.Url);
+        Assert.Equal("page", p.Layout);
+        Assert.Equal(new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero), p.Updated);
+    }
+
+    [Fact]
     public void Zero_published_posts_is_fine_missing_folder_empty_folder_or_only_drafts()
     {
         var missing = new MarkdownPostService(new MarkdownContentOptions { ContentPath = Path.Combine(_dir, "nope") }, _dir);
