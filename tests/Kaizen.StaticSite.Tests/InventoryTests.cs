@@ -74,6 +74,15 @@ public class InventoryTests
     }
 
     [Fact]
+    public async Task Route_source_supplies_optional_lastmod_per_route()
+    {
+        var inv = await BuildAsync();
+        Assert.Equal(new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero), inv.Routes.Single(r => r.Path == "/items/a").LastModified);
+        Assert.Null(inv.Routes.Single(r => r.Path == "/items/b%20c").LastModified);
+        Assert.Null(inv.Routes.Single(r => r.Path == "/public").LastModified);
+    }
+
+    [Fact]
     public async Task Page_gate_can_switch_a_page_off_and_reports_why()
     {
         var inv = await BuildAsync();

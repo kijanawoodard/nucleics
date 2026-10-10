@@ -25,4 +25,8 @@ public sealed class PageRouteSource(SitePages pages) : IStaticRouteSource
             yield return new Dictionary<string, string> { ["slug"] = p.Slug };
         await Task.CompletedTask;
     }
+
+    /// <summary>Sitemap lastmod: the hand-set <c>updated</c> date, else <c>date</c>.</summary>
+    public DateTimeOffset? GetLastModified(IReadOnlyDictionary<string, string> routeValues) =>
+        pages.GetBySlug(routeValues["slug"]) is { } p ? p.Updated ?? p.Date : null;
 }

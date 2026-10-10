@@ -140,13 +140,13 @@ public static partial class RouteInventoryBuilder
                     values.TryGetValue(m.Groups[2].Value, out var v)
                         ? (m.Groups[1].Length > 0 ? v : Uri.EscapeDataString(v))
                         : "");
-                Add(inv, seen, Normalize(path), template, RouteOrigin.Expanded, component);
+                Add(inv, seen, Normalize(path), template, RouteOrigin.Expanded, component, src.GetLastModified(values));
             }
     }
 
-    private static void Add(RouteInventory inv, HashSet<string> seen, string path, string template, RouteOrigin origin, Type? c)
+    private static void Add(RouteInventory inv, HashSet<string> seen, string path, string template, RouteOrigin origin, Type? c, DateTimeOffset? lastModified = null)
     {
-        if (seen.Add(path)) inv.Routes.Add(new StaticRoute(path, template, origin, c));
+        if (seen.Add(path)) inv.Routes.Add(new StaticRoute(path, template, origin, c) { LastModified = lastModified });
     }
 
     /// <summary>"/about/" and "about" both become "/about"; the root stays "/".</summary>

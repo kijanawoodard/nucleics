@@ -39,6 +39,10 @@
     private object[] JsonLdFor(Post p)
     {
         var url = Seo.SiteUrl + p.Url;
-        return new object[] { JsonLd.BreadcrumbList(("Home", Seo.SiteUrl + "/"), (p.Title, url)) };
+        return new object[]
+        {
+            JsonLd.WebPage(p.Title, url, p.Date, p.Description, p.Updated, p.Author, "Nucleics"),
+            JsonLd.BreadcrumbList(("Home", Seo.SiteUrl + "/"), (p.Title, url)),
+        };
     }
 }

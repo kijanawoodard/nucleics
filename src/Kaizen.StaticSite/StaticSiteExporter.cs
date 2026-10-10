@@ -165,10 +165,8 @@ public sealed class StaticSiteExporter
         foreach (var (route, bytes) in assets) File.WriteAllBytes(Safe(route), bytes);
 
         var site = _o.SiteUrl.TrimEnd('/');
-        XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
-        var sitemap = new XDocument(new XDeclaration("1.0", "utf-8", null),
-            new XElement(ns + "urlset", pages.Keys.OrderBy(p => p, StringComparer.Ordinal).Select(p =>
-                new XElement(ns + "url", new XElement(ns + "loc", site + (p == "/" ? "/" : p + "/"))))));
+        var lastmods = inv.Routes.ToDictionary(r => r.Path, r => r.LastModified, StringComparer.Ordinal);
+        var sitemap = BuildSitemap(site, pages.Keys.Select(p => (p, lastmods.GetValueOrDefault(p))));
         File.WriteAllText(Safe("sitemap.xml"), sitemap.Declaration + Environment.NewLine + sitemap.ToString(), new UTF8Encoding(false));
 
         var robots = new StringBuilder().AppendLine("User-agent: *").AppendLine("Allow: /").AppendLine($"Sitemap: {site}/sitemap.xml");
@@ -185,5 +183,17 @@ public sealed class StaticSiteExporter
         File.WriteAllText(Safe("kaizen-manifest.json"), JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
 
         return PassthroughFiles.Copy(_o, outRoot, _log, Console.Error);
+    }
+
+    /// <summary>sitemap.xml for the exported paths, sorted; &lt;lastmod&gt; (yyyy-MM-dd) only where a date was supplied.</summary>
+    public static XDocument BuildSitemap(string siteUrl, IEnumerable<(string Path, DateTimeOffset? LastModified)> routes)
+    {
+        var site = siteUrl.TrimEnd('/');
+        XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+        return new XDocument(new XDeclaration("1.0", "utf-8", null),
+            new XElement(ns + "urlset", routes.OrderBy(r => r.Path, StringComparer.Ordinal).Select(r =>
+                new XElement(ns + "url",
+                    new XElement(ns + "loc", site + (r.Path == "/" ? "/" : r.Path + "/")),
+                    r.LastModified is { } d ? new XElement(ns + "lastmod", d.ToString("yyyy-MM-dd")) : null))));
     }
 }
