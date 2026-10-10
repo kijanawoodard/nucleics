@@ -1,0 +1,33 @@
+@inject SeoOptions Seo
+<SeoHead Title="@($"{Doc.Title} — Nucleics")"
+         Description="@Doc.Description"
+         Path="@Doc.Url"
+         Published="Doc.Date"
+         Modified="Doc.Updated"
+         JsonLdData="JsonLdFor(Doc)" />
+<article class="hero page">
+        <h1>@Doc.Title</h1>
+        <p class="page-dates">
+            Published <time datetime="@Doc.Date.ToString("yyyy-MM-dd")">@Doc.Date.ToString("MMM d, yyyy")</time>
+            @if (Doc.Updated is { } u && u.Date != Doc.Date.Date)
+            {
+                <span> · Updated <time datetime="@u.ToString("yyyy-MM-dd")">@u.ToString("MMM d, yyyy")</time></span>
+            }
+        </p>
+        <div class="lede post-body">@((MarkupString)Doc.Html)</div>
+</article>
+
+@code {
+    // Evergreen web page: title, quiet Published · Updated line, body. JSON-LD WebPage + breadcrumb.
+    [Parameter, EditorRequired] public ContentPage Doc { get; set; } = default!;
+
+    private object[] JsonLdFor(ContentPage p)
+    {
+        var url = Seo.SiteUrl + p.Url;
+        return new object[]
+        {
+            JsonLd.WebPage(p.Title, url, p.Date, p.Description, p.Updated, p.Author, "Nucleics"),
+            JsonLd.BreadcrumbList(("Home", Seo.SiteUrl + "/"), (p.Title, url)),
+        };
+    }
+}

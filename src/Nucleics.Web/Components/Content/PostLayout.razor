@@ -1,0 +1,33 @@
+@inject SeoOptions Seo
+<SeoHead Title="@($"{Doc.Title} — Nucleics")"
+         Description="@Doc.Description"
+         Type="article"
+         Path="@Doc.Url"
+         Published="Doc.Date"
+         Modified="Doc.Updated"
+         Tags="Doc.Tags"
+         JsonLdData="JsonLdFor(Doc)" />
+<article class="hero">
+        <p class="eyebrow"><a class="text-link" href="@IndexUrl">@IndexName</a> · <time datetime="@Doc.Date.ToString("yyyy-MM-dd")">@Doc.Date.ToString("yyyy-MM-dd")</time></p>
+        <h1>@Doc.Title</h1>
+        <div class="lede post-body">@((MarkupString)Doc.Html)</div>
+</article>
+
+@code {
+    // Dated post in a collection with an index (e.g. the blog): eyebrow link to the index + date, body. JSON-LD BlogPosting + breadcrumb.
+    [Parameter, EditorRequired] public ContentPage Doc { get; set; } = default!;
+    [Parameter, EditorRequired] public IContentCollection Collection { get; set; } = default!;
+
+    private string IndexUrl => (Collection.IndexPath() ?? "") + "/";
+    private string IndexName => Collection.Name.Length == 0 ? "" : char.ToUpperInvariant(Collection.Name[0]) + Collection.Name[1..];
+
+    private object[] JsonLdFor(ContentPage p)
+    {
+        var url = Seo.SiteUrl + p.Url;
+        return new object[]
+        {
+            JsonLd.BlogPosting(p.Title, url, p.Date, p.Description, p.Updated, p.Author, "Nucleics", keywords: p.Tags),
+            JsonLd.BreadcrumbList(("Home", Seo.SiteUrl + "/"), (IndexName, Seo.SiteUrl + IndexUrl), (p.Title, url)),
+        };
+    }
+}
