@@ -1,6 +1,5 @@
 @page "/{slug}"
-@using Nucleics.Web.Glue
-@inject SitePages Pages
+@inject ContentCatalog Catalog
 @inject NavigationManager Nav
 @inject SeoOptions Seo
 
@@ -28,15 +27,15 @@
 
 @code {
     [Parameter] public string Slug { get; set; } = "";
-    private Post? doc;
+    private ContentPage? doc;
 
     protected override void OnInitialized()
     {
-        doc = Pages.GetBySlug(Slug);
+        doc = Catalog["pages"].GetBySlug(Slug);
         if (doc is null) Nav.NotFound();
     }
 
-    private object[] JsonLdFor(Post p)
+    private object[] JsonLdFor(ContentPage p)
     {
         var url = Seo.SiteUrl + p.Url;
         return new object[]

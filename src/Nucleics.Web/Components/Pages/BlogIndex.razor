@@ -1,5 +1,5 @@
 @page "/blog"
-@inject IPostService Posts
+@inject ContentCatalog Catalog
 
 <SeoHead Title="Blog — Nucleics"
          Description="Clear claims, careful evidence: writing on nuclear abundance."
@@ -12,7 +12,7 @@
 
 <section class="why">
     <ul class="why-list">
-        @foreach (var post in Posts.GetAll())
+        @foreach (var post in Catalog["blog"].GetAll())
         {
             <li>
                 <strong><a class="text-link" href="@post.Url">@post.Title</a></strong>

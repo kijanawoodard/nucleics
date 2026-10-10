@@ -6,33 +6,36 @@ using Markdig.Syntax;
 
 namespace Kaizen.BlogEngine;
 
-public sealed class MarkdownPostService : IPostService
+/// <summary>A folder of markdown files with YAML front matter, served under one url prefix. See <see cref="IContentCollection"/>.</summary>
+public sealed class MarkdownCollection : IContentCollection
 {
-    private readonly MarkdownContentOptions _options;
+    private readonly CollectionOptions _options;
     private readonly string _folder;
-    private readonly Lazy<IReadOnlyList<Post>> _posts;
+    private readonly Lazy<IReadOnlyList<ContentPage>> _pages;
 
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UseYamlFrontMatter().Build();
 
-    public MarkdownPostService(MarkdownContentOptions options, string contentRoot)
+    public MarkdownCollection(CollectionOptions options, string contentRoot)
     {
         _options = options;
         _folder = Path.IsPathRooted(options.ContentPath) ? options.ContentPath : Path.Combine(contentRoot, options.ContentPath);
-        _posts = new Lazy<IReadOnlyList<Post>>(Load);
+        _pages = new Lazy<IReadOnlyList<ContentPage>>(Load);
     }
 
+    public string Name => _options.Name;
     public string UrlPrefix => _options.UrlPrefix;
-    public IReadOnlyList<Post> GetAll() => _posts.Value;
-    public Post? GetBySlug(string slug) => _posts.Value.FirstOrDefault(p => string.Equals(p.Slug, slug, StringComparison.Ordinal));
-    public IReadOnlyList<Post> GetByTag(string tag) =>
-        _posts.Value.Where(p => p.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase)).ToList();
+    public CollectionOptions Options => _options;
+    public IReadOnlyList<ContentPage> GetAll() => _pages.Value;
+    public ContentPage? GetBySlug(string slug) => _pages.Value.FirstOrDefault(p => string.Equals(p.Slug, slug, StringComparison.Ordinal));
+    public IReadOnlyList<ContentPage> GetByTag(string tag) =>
+        _pages.Value.Where(p => p.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase)).ToList();
     public IReadOnlyList<string> GetTags() =>
-        _posts.Value.SelectMany(p => p.Tags).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToList();
+        _pages.Value.SelectMany(p => p.Tags).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToList();
 
-    private IReadOnlyList<Post> Load()
+    private IReadOnlyList<ContentPage> Load()
     {
-        if (!Directory.Exists(_folder)) return Array.Empty<Post>();
-        var list = new List<Post>();
+        if (!Directory.Exists(_folder)) return Array.Empty<ContentPage>();
+        var list = new List<ContentPage>();
         foreach (var file in Directory.EnumerateFiles(_folder, "*.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
         {
             var post = Parse(file);
@@ -43,7 +46,7 @@ public sealed class MarkdownPostService : IPostService
         return list.OrderByDescending(p => p.Date).ThenBy(p => p.Slug, StringComparer.Ordinal).ToList();
     }
 
-    private Post Parse(string file)
+    private ContentPage Parse(string file)
     {
         var doc = Markdown.Parse(File.ReadAllText(file), Pipeline);
         var block = doc.Descendants<YamlFrontMatterBlock>().FirstOrDefault();   // Markdig finds the --- ... --- block
@@ -59,9 +62,9 @@ public sealed class MarkdownPostService : IPostService
         var slug = (string.IsNullOrWhiteSpace(fm.Slug) ? Path.GetFileNameWithoutExtension(file) : fm.Slug).Trim().ToLowerInvariant();
         if (!Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$")) throw new InvalidOperationException($"{file}: slug '{slug}' must be lowercase-kebab.");
 
-        return new Post(slug, title, date, hasUpdated ? updated : null, NullIfBlank(fm.Description), NullIfBlank(fm.Author),
+        return new ContentPage(slug, title, date, hasUpdated ? updated : null, NullIfBlank(fm.Description), NullIfBlank(fm.Author),
             fm.Tags ?? new List<string>(), fm.Draft, Markdown.ToHtml(doc, Pipeline), file)
-        { Url = $"{_options.UrlPrefix.TrimEnd('/')}/{slug}/", Layout = NullIfBlank(fm.Layout) };
+        { Url = $"{_options.UrlPrefix.TrimEnd('/')}/{slug}/", Layout = NullIfBlank(fm.Layout), Collection = _options.Name };
     }
 
     private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
