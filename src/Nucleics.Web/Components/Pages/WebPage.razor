@@ -1,0 +1,44 @@
+@page "/{slug}"
+@using Nucleics.Web.Glue
+@inject SitePages Pages
+@inject NavigationManager Nav
+@inject SeoOptions Seo
+
+@if (doc is not null)
+{
+    <SeoHead Title="@($"{doc.Title} — Nucleics")"
+             Description="@doc.Description"
+             Path="@doc.Url"
+             Published="doc.Date"
+             Modified="doc.Updated"
+             JsonLdData="JsonLdFor(doc)" />
+
+    <article class="hero page">
+        <h1>@doc.Title</h1>
+        <p class="page-dates">
+            Published <time datetime="@doc.Date.ToString("yyyy-MM-dd")">@doc.Date.ToString("MMM d, yyyy")</time>
+            @if (doc.Updated is { } u && u.Date != doc.Date.Date)
+            {
+                <span> · Updated <time datetime="@u.ToString("yyyy-MM-dd")">@u.ToString("MMM d, yyyy")</time></span>
+            }
+        </p>
+        <div class="lede post-body">@((MarkupString)doc.Html)</div>
+    </article>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+    private Post? doc;
+
+    protected override void OnInitialized()
+    {
+        doc = Pages.GetBySlug(Slug);
+        if (doc is null) Nav.NotFound();
+    }
+
+    private object[] JsonLdFor(Post p)
+    {
+        var url = Seo.SiteUrl + p.Url;
+        return new object[] { JsonLd.BreadcrumbList(("Home", Seo.SiteUrl + "/"), (p.Title, url)) };
+    }
+}

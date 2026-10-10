@@ -61,7 +61,7 @@ public sealed class MarkdownPostService : IPostService
 
         return new Post(slug, title, date, hasUpdated ? updated : null, NullIfBlank(fm.Description), NullIfBlank(fm.Author),
             fm.Tags ?? new List<string>(), fm.Draft, Markdown.ToHtml(doc, Pipeline), file)
-        { Url = $"{_options.UrlPrefix.TrimEnd('/')}/{slug}/" };
+        { Url = $"{_options.UrlPrefix.TrimEnd('/')}/{slug}/", Layout = NullIfBlank(fm.Layout) };
     }
 
     private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

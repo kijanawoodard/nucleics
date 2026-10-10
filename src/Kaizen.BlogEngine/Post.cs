@@ -15,4 +15,6 @@ public sealed record Post(
 {
     /// <summary>Site-relative URL with trailing slash, e.g. /blog/hello/. Set by the service from the url prefix.</summary>
     public string Url { get; init; } = "";
+    /// <summary>Layout from front matter (e.g. "page"); null for the default post layout.</summary>
+    public string? Layout { get; init; }
 }

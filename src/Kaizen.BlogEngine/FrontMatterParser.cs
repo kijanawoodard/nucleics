@@ -17,6 +17,8 @@ public sealed class FrontMatter
     public string? Slug { get; set; }
     public List<string> Tags { get; set; } = new();
     public bool Draft { get; set; }
+    /// <summary>Optional layout hint, e.g. "page" for an evergreen web page. Null means the default (post) layout.</summary>
+    public string? Layout { get; set; }
 }
 
 /// <summary>
@@ -61,5 +63,5 @@ public static class FrontMatterParser
         return m;
     }
 
-    private const string Allowed = "title, date, updated, description, author, slug, tags, draft";
+    private const string Allowed = "title, date, updated, description, author, slug, tags, draft, layout";
 }
