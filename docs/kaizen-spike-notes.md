@@ -15,7 +15,7 @@ Nucleics.slnx
 src/Kaizen.StaticSite   exporter. IStaticRouteSource, ExcludeFromStaticExportAttribute, RouteInventoryBuilder, StaticSiteExporter, LinkScanner, EndpointReport
 src/Kaizen.BlogEngine   MarkdownCollection (Markdig + its YamlFrontMatter extension) + FrontMatterParser/FrontMatter (YamlDotNet), IContentCollection, ContentCatalog, AddContentCollection(...) (was MarkdownPostService/IPostService/AddMarkdownContent before bridge#21)
 src/Kaizen.Seo          SeoHead.razor, JsonLdScript.razor, JsonLd helpers, SeoOptions/AddSeo (Razor class library)
-src/Nucleics.Web        Blazor SSR site: App/Routes/MainLayout, Home/BlogIndex/BlogPost/NotFound, Glue/CollectionRoutes, content/pages/*.md, content/posts/*.md
+src/Nucleics.Web        Blazor SSR site: App/Routes/MainLayout, Home/BlogIndex/ContentRoute (+ Content/PageLayout, PostLayout)/NotFound, Glue/CollectionRoutes, content/pages/*.md, content/posts/*.md
 tests/Kaizen.StaticSite.Tests   xunit tests for the exporter (references only Kaizen.StaticSite)
 scripts/                verify-output.py, verify-seo.py, demo-check.sh
 docs/                   this file, spike1-endpoints.txt, spike5-check-demo.txt

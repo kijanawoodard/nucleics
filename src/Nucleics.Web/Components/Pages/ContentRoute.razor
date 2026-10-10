@@ -1,0 +1,20 @@
+@page "/{slug}"
+@page "/blog/{slug}"
+@inject ContentCatalog Catalog
+@inject NavigationManager Nav
+@if (doc is not null && layout == "page") {<PageLayout Doc="doc" />} else if (doc is not null) {<PostLayout Doc="doc" Collection="Catalog.CollectionOf(doc)" />}
+
+@code {
+    // One route component for every content collection; the page's layout comes from front matter `layout`, else the collection default.
+    [Parameter] public string Slug { get; set; } = "";
+    private ContentPage? doc;
+    private string layout = "page";
+
+    protected override void OnInitialized()
+    {
+        doc = Catalog.FindByUrl(Nav.ToBaseRelativePath(Nav.Uri));
+        if (doc is null) { Nav.NotFound(); return; } // static SSR: HTTP 404 + NotFoundPage
+        // Collections with an index (the blog) default to the post layout; plain pages default to the page layout.
+        layout = doc.Layout ?? (Catalog.CollectionOf(doc).Options.Index ? "post" : "page");
+    }
+}

@@ -34,4 +34,18 @@ public sealed class ContentCatalog(IEnumerable<IContentCollection> collections)
     public IContentCollection this[string name] =>
         Collections.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase))
         ?? throw new KeyNotFoundException($"No content collection named '{name}' is registered (have: {string.Join(", ", Collections.Select(c => c.Name))}).");
+
+    /// <summary>The published page whose url is <paramref name="path"/> ("/blog/hello", "blog/hello/", "/why-nuclear"), from any collection; else null.</summary>
+    public ContentPage? FindByUrl(string path)
+    {
+        var p = "/" + path.Split('?', '#')[0].Trim('/');
+        var slash = p.LastIndexOf('/');
+        var (prefix, slug) = (p[..slash], p[(slash + 1)..]);
+        if (slug.Length == 0) return null;
+        return Collections.Where(c => string.Equals(c.UrlPrefix.TrimEnd('/'), prefix, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.GetBySlug(slug)).FirstOrDefault(x => x is not null);
+    }
+
+    /// <summary>The collection that loaded <paramref name="page"/>.</summary>
+    public IContentCollection CollectionOf(ContentPage page) => this[page.Collection];
 }

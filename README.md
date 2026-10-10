@@ -114,7 +114,7 @@ See it working without touching the repo: `scripts/demo-blog.sh` (publishes a co
    **Publish the first post:** delete the `draft: true` line from `why-nuclear.md` (or add a new post). The blog index appears in the export and sitemap automatically,
    but the nav has no Blog link by design: add `<a href="@Home/blog/">Blog</a>`-style link to `MainLayout.razor` (a plain `/blog/` is fine) when you want it, and review the sample's copy first.
 2. `dotnet run --project src/Nucleics.Web -- export` → `output/blog/my-post/index.html`, listed in `sitemap.xml` and on `/blog/`.
-   The page is the single catch-all `Components/Pages/BlogPost.razor` (`@page "/blog/{slug}"`); an unknown slug returns 404.
+   Every collection is rendered by `Components/Pages/ContentRoute.razor` (`@page "/{slug}"` and `@page "/blog/{slug}"`), which finds the page via `ContentCatalog.FindByUrl` and picks `PageLayout` or `PostLayout` from front matter `layout` (default: `post` for collections with an index, else `page`); an unknown slug returns 404. A new collection prefix needs one more `@page` line there.
 
 Front matter (YamlDotNet, strict): `title` and `date` are required; `date`/`updated` are an ISO date (`2026-10-01`) or date-time (`2026-10-01T09:30:00Z`, `2026-10-01 09:30:00`);
 `tags` is an inline `[a, b]` or a dash list; text values may be plain, `'single'` or `"double"` quoted, or multi-line (`|` literal, `>` folded); `draft: true|false`; `#` comments are fine.

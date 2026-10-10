@@ -144,6 +144,12 @@ public sealed class CollectionTests : IDisposable
         Assert.Empty(catalog["blog"].GetAll());
         Assert.True(catalog["blog"].Options.Index);
         Assert.Throws<KeyNotFoundException>(() => catalog["nope"]);
+        Assert.Equal("why", catalog.FindByUrl("/why")!.Slug);
+        Assert.Equal("why", catalog.FindByUrl("why/")!.Slug);
+        Assert.Null(catalog.FindByUrl("/blog/why"));      // right slug, wrong collection prefix
+        Assert.Null(catalog.FindByUrl("/blog/wip"));      // drafts are not findable
+        Assert.Null(catalog.FindByUrl("/"));
+        Assert.Equal("pages", catalog.CollectionOf(catalog.FindByUrl("/why")!).Name);
     }
 
     private sealed class FakeEnv : Microsoft.Extensions.Hosting.IHostEnvironment
