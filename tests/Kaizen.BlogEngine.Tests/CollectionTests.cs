@@ -1,19 +1,20 @@
+using Microsoft.Extensions.DependencyInjection;
 using Kaizen.BlogEngine;
 using Xunit;
 
 namespace Kaizen.BlogEngine.Tests;
 
-public sealed class PostServiceTests : IDisposable
+public sealed class CollectionTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "kaizen-posts-" + Guid.NewGuid().ToString("N"));
-    public PostServiceTests() => Directory.CreateDirectory(_dir);
+    public CollectionTests() => Directory.CreateDirectory(_dir);
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
-    private IPostService Service(string? prefix = null)
+    private IContentCollection Service(string? prefix = null)
     {
-        var o = new MarkdownContentOptions { ContentPath = _dir };
+        var o = new CollectionOptions { ContentPath = _dir };
         if (prefix is not null) o.UrlPrefix = prefix;
-        return new MarkdownPostService(o, _dir);
+        return new MarkdownCollection(o, _dir);
     }
     private void Write(string name, string text) => File.WriteAllText(Path.Combine(_dir, name), text);
 
@@ -46,7 +47,7 @@ public sealed class PostServiceTests : IDisposable
     [Fact]
     public void Zero_published_posts_is_fine_missing_folder_empty_folder_or_only_drafts()
     {
-        var missing = new MarkdownPostService(new MarkdownContentOptions { ContentPath = Path.Combine(_dir, "nope") }, _dir);
+        var missing = new MarkdownCollection(new CollectionOptions { ContentPath = Path.Combine(_dir, "nope") }, _dir);
         Assert.Empty(missing.GetAll());
         Assert.Empty(Service().GetAll()); // empty folder
         Write("wip.md", "---\ntitle: WIP\ndate: 2026-10-02\ndraft: true\n---\nx");
@@ -63,7 +64,7 @@ public sealed class PostServiceTests : IDisposable
         Write("new.md", "---\ntitle: New\ndate: 2026-05-01\n---\nx");
         Write("wip.md", "---\ntitle: WIP\ndate: 2026-09-01\ndraft: true\n---\nx");
         Assert.Equal(new[] { "new", "old" }, Service().GetAll().Select(p => p.Slug));
-        var withDrafts = new MarkdownPostService(new MarkdownContentOptions { ContentPath = _dir, IncludeDrafts = true }, _dir);
+        var withDrafts = new MarkdownCollection(new CollectionOptions { ContentPath = _dir, IncludeDrafts = true }, _dir);
         Assert.Equal(new[] { "wip", "new", "old" }, withDrafts.GetAll().Select(p => p.Slug));
     }
 
@@ -102,6 +103,56 @@ public sealed class PostServiceTests : IDisposable
         Write("b.md", "---\ntitle: B\ndate: 2026-01-01\nslug: same\n---\nx");
         Assert.Throws<InvalidOperationException>(() => Service().GetAll());
     }
+    [Fact]
+    public void Collection_name_is_stamped_on_pages_and_template_and_index_follow_the_prefix()
+    {
+        Write("p.md", "---\ntitle: P\ndate: 2026-01-01\n---\nx");
+        var blog = new MarkdownCollection(new CollectionOptions { Name = "blog", ContentPath = _dir, UrlPrefix = "/blog", Index = true }, _dir);
+        var pages = new MarkdownCollection(new CollectionOptions { Name = "pages", ContentPath = _dir, UrlPrefix = "" }, _dir);
+        Assert.Equal("blog", Assert.Single(blog.GetAll()).Collection);
+        Assert.Equal("/blog/{slug}", blog.UrlTemplate());
+        Assert.Equal("/blog", blog.IndexPath());
+        Assert.Equal("/{slug}", pages.UrlTemplate());
+        Assert.Null(pages.IndexPath());
+        Assert.Equal("/p/", pages.GetBySlug("p")!.Url);
+    }
+
+    [Fact]
+    public void LastModified_prefers_updated_and_falls_back_to_date()
+    {
+        Write("a.md", "---\ntitle: A\ndate: 2026-10-01\nupdated: 2026-10-10\n---\nx");
+        Write("b.md", "---\ntitle: B\ndate: 2026-09-01\n---\nx");
+        var c = Service("");
+        Assert.Equal(new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero), c.GetBySlug("a")!.LastModified());
+        Assert.Equal(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero), c.GetBySlug("b")!.LastModified());
+    }
+
+    [Fact]
+    public void Catalog_registers_collections_by_name_and_hides_drafts_per_collection()
+    {
+        var pagesDir = Path.Combine(_dir, "pages"); var postsDir = Path.Combine(_dir, "posts");
+        Directory.CreateDirectory(pagesDir); Directory.CreateDirectory(postsDir);
+        File.WriteAllText(Path.Combine(pagesDir, "why.md"), "---\ntitle: Why\ndate: 2026-10-01\nlayout: page\n---\nx");
+        File.WriteAllText(Path.Combine(postsDir, "wip.md"), "---\ntitle: WIP\ndate: 2026-10-01\ndraft: true\n---\nx");
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddSingleton<Microsoft.Extensions.Hosting.IHostEnvironment>(new FakeEnv { ContentRootPath = _dir });
+        services.AddContentCollection("pages", "pages", urlPrefix: "");
+        services.AddContentCollection("blog", "posts", "/blog", c => c.Index = true);
+        var catalog = services.BuildServiceProvider().GetRequiredService<ContentCatalog>();
+        Assert.Equal(new[] { "pages", "blog" }, catalog.Collections.Select(c => c.Name));
+        Assert.Equal("/why/", Assert.Single(catalog["pages"].GetAll()).Url);
+        Assert.Empty(catalog["blog"].GetAll());
+        Assert.True(catalog["blog"].Options.Index);
+        Assert.Throws<KeyNotFoundException>(() => catalog["nope"]);
+    }
+
+    private sealed class FakeEnv : Microsoft.Extensions.Hosting.IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Test";
+        public string ApplicationName { get; set; } = "Test";
+        public string ContentRootPath { get; set; } = "";
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = new Microsoft.Extensions.FileProviders.NullFileProvider();
+    }
 }
 
 public sealed class PostServiceErrorLocationTests : IDisposable
@@ -110,7 +161,7 @@ public sealed class PostServiceErrorLocationTests : IDisposable
     public PostServiceErrorLocationTests() => Directory.CreateDirectory(_dir);
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
-    private IPostService Service() => new MarkdownPostService(new MarkdownContentOptions { ContentPath = _dir }, _dir);
+    private IContentCollection Service() => new MarkdownCollection(new CollectionOptions { ContentPath = _dir }, _dir);
 
     [Fact]
     public void Malformed_yaml_names_the_file_and_the_line_in_the_file()
@@ -137,4 +188,5 @@ public sealed class PostServiceErrorLocationTests : IDisposable
         Assert.Equal(new[] { "one", "two" }, p.Tags);
         Assert.Contains("<strong>text</strong>", p.Html);
     }
+
 }

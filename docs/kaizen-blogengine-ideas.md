@@ -13,7 +13,7 @@ Parked ideas for the blog engine library. Nothing here is committed work.
 3. **Structured data**: JSON-LD `Article` with `datePublished` and `dateModified`.
 
 **Where it fits.**
-- `Post` already carries `Updated` (nullable), so the engine side is mostly done. The work is exposing it.
+- Done (nucleics #8, #9): sitemap lastmod + JSON-LD dates; content pages + collections (bridge#21). `ContentPage` (was `Post`) carries `Updated` (nullable), so the engine side is mostly done. The work is exposing it.
 - The sitemap is written by Kaizen.StaticSite (`StaticSiteExporter`). It needs an optional per-route last-modified hook so Kaizen.StaticSite stays independent of Kaizen.BlogEngine. The blog engine supplies dates through that hook.
 - JSON-LD likely belongs in Kaizen.Seo, which already owns head metadata.
 

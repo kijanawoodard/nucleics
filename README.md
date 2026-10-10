@@ -32,16 +32,29 @@ Design brief: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21). Fi
 Nucleics.slnx
 src/
   Kaizen.StaticSite/   exporter: endpoint inventory, export, check, sitemap/robots/404, asset materialisation
-  Kaizen.BlogEngine/   Markdig + YamlDotNet post service, YAML front matter (IPostService)
+  Kaizen.BlogEngine/   content pages + collections (Markdig + YamlDotNet; IContentCollection, ContentCatalog)
   Kaizen.Seo/          <SeoHead/> (title/description/canonical/OG/Twitter) + JSON-LD helpers
-  Nucleics.Web/        the site: layout, pages, content/posts/*.md, glue (BlogRouteSource)
+  Nucleics.Web/        the site: layout, pages, content/pages/*.md, content/posts/*.md, glue (CollectionRoutes)
 tests/                 Kaizen.StaticSite.Tests, Kaizen.BlogEngine.Tests (xunit; not used by build.sh)
 Directory.Packages.props  central package versions (no Version on any PackageReference)
 scripts/               verify-output.py, verify-seo.py, demo-check.sh
 ```
 
 The three `Kaizen.*` libraries have **no references to each other**. Only `Nucleics.Web` references all three and
-wires them together (`Glue/BlogRouteSource.cs` adapts the blog's `IPostService` to the exporter's `IStaticRouteSource`).
+wires them together (`Glue/CollectionRoutes.cs` adapts every content collection to the exporter's `IStaticRouteSource`, with per-route lastmod).
+
+### Content model
+
+One model, `ContentPage`: markdown + front matter (`title`, `description`, `date`, `updated`, `layout`, `draft`, plus `author`, `slug`, `tags`).
+A **collection** is a folder + url prefix + rules (`Index`, `Tags`, `Feed`, `IncludeDrafts`). The site registers them in `Program.cs`:
+
+```csharp
+builder.Services.AddContentCollection("pages", "content/pages", urlPrefix: "");                       // /{slug}/   plain web pages
+builder.Services.AddContentCollection("blog", "content/posts", "/blog", c => { c.Index = true; c.Tags = true; }); // /blog/{slug}/
+builder.Services.AddCollectionRoutes();   // glue: export routes + sitemap lastmod (updated ?? date) + /blog index gate
+```
+
+Pages read a collection with `@inject ContentCatalog Catalog` → `Catalog["blog"].GetBySlug(slug)`. `Feed` is declared but no feed is generated yet.
 
 ### Build / run / export / check
 
@@ -77,7 +90,7 @@ or a page that references a dropped asset. Dangling internal links fail **`check
    - Opt out: `@attribute [ExcludeFromStaticExport("why")]`.
    - `[Authorize]` pages are excluded automatically (the export runs anonymous; `[AllowAnonymous]` wins). `--include-auth` disables that, for diagnostics.
    - A parameterised route (`@page "/team/{id}"`) is **not exported** (loud warning) until you register an
-     `IStaticRouteSource` whose `Template` is `"/team/{id}"` and which yields `{ ["id"] = "…" }` per page (see `Glue/BlogRouteSource.cs`).
+     `IStaticRouteSource` whose `Template` is `"/team/{id}"` and which yields `{ ["id"] = "…" }` per page (see `Glue/CollectionRoutes.cs`).
 
 ### How to add a post
 

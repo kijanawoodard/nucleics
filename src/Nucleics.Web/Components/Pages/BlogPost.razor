@@ -1,5 +1,5 @@
 @page "/blog/{slug}"
-@inject IPostService Posts
+@inject ContentCatalog Catalog
 @inject NavigationManager Nav
 @inject SeoOptions Seo
 
@@ -23,15 +23,15 @@
 
 @code {
     [Parameter] public string Slug { get; set; } = "";
-    private Post? post;
+    private ContentPage? post;
 
     protected override void OnInitialized()
     {
-        post = Posts.GetBySlug(Slug);
+        post = Catalog["blog"].GetBySlug(Slug);
         if (post is null) Nav.NotFound(); // static SSR: HTTP 404 + NotFoundPage
     }
 
-    private object[] JsonLdFor(Post p)
+    private object[] JsonLdFor(ContentPage p)
     {
         var url = Seo.SiteUrl + p.Url;
         return new object[]
