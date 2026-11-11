@@ -9,7 +9,7 @@
 # api.nuget.org). Exits non-zero on ANY failure (set -e) and says which step failed.
 set -e
 
-DOTNET_VERSION="11.0.100-rc.1.26425.128"   # keep in sync with global.json
+DOTNET_VERSION="11.0.100"   # keep in sync with global.json
 
 cd "$(dirname "$0")"
 ROOT="$(pwd)"
