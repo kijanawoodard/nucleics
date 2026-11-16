@@ -4,10 +4,10 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The site wires the three libraries together. The libraries do NOT reference each other. -->
-    <ProjectReference Include="..\Kaizen.StaticSite\Kaizen.StaticSite.csproj" />
-    <ProjectReference Include="..\Kaizen.BlogEngine\Kaizen.BlogEngine.csproj" />
-    <ProjectReference Include="..\Kaizen.Seo\Kaizen.Seo.csproj" />
+    <!-- The site wires the three Kaizen libraries together (kaizen-hq/Kaizen.Static). The libraries do NOT reference each other. -->
+    <PackageReference Include="KaizenIO.StaticSite" />
+    <PackageReference Include="KaizenIO.BlogEngine" />
+    <PackageReference Include="KaizenIO.Seo" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="content\**\*" CopyToOutputDirectory="PreserveNewest" />
