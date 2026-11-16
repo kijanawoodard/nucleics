@@ -31,16 +31,21 @@ Design brief: [bridge#21](https://github.com/kijanawoodard/bridge/issues/21). Fi
 ```
 Nucleics.slnx
 src/
-  Kaizen.StaticSite/   exporter: endpoint inventory, export, check, sitemap/robots/404, asset materialisation
-  Kaizen.BlogEngine/   content pages + collections (Markdig + YamlDotNet; IContentCollection, ContentCatalog)
-  Kaizen.Seo/          <SeoHead/> (title/description/canonical/OG/Twitter) + JSON-LD helpers
   Nucleics.Web/        the site: layout, pages, content/pages/*.md, content/posts/*.md, glue (CollectionRoutes)
-tests/                 Kaizen.StaticSite.Tests, Kaizen.BlogEngine.Tests (xunit; not used by build.sh)
-Directory.Packages.props  central package versions (no Version on any PackageReference)
+Directory.Packages.props  central package versions (no Version on any PackageReference), including the KaizenIO.* packages
 scripts/               verify-output.py, verify-seo.py, demo-check.sh
 ```
 
-The three `Kaizen.*` libraries have **no references to each other**. Only `Nucleics.Web` references all three and
+The three Kaizen libraries live in **[kaizen-hq/Kaizen.Static](https://github.com/kaizen-hq/Kaizen.Static)** (extracted from this repo with history, tests included)
+and come in as NuGet packages (package IDs `KaizenIO.*`, namespaces unchanged):
+
+| Package | Namespace | Role |
+|--|--|--|
+| `KaizenIO.StaticSite` | `Kaizen.StaticSite` | exporter: endpoint inventory, export, check, sitemap/robots/404, asset materialisation |
+| `KaizenIO.BlogEngine` | `Kaizen.BlogEngine` | content pages + collections (Markdig + YamlDotNet; IContentCollection, ContentCatalog) |
+| `KaizenIO.Seo` | `Kaizen.Seo` | `<SeoHead/>` (title/description/canonical/OG/Twitter) + JSON-LD helpers |
+
+The libraries have **no references to each other**. Only `Nucleics.Web` references all three and
 wires them together (`Glue/CollectionRoutes.cs` adapts every content collection to the exporter's `IStaticRouteSource`, with per-route lastmod).
 
 ### Content model
@@ -66,7 +71,7 @@ dotnet run --project src/Nucleics.Web              # normal live server on http:
 dotnet run --project src/Nucleics.Web -- export    # write ./output  (alias: --static-export)
 dotnet run --project src/Nucleics.Web -- check     # CI gate: no files written, exit 1 on any problem
 dotnet run --project src/Nucleics.Web -- routes    # print every endpoint + the ComponentTypeMetadata filter result
-dotnet test Nucleics.slnx                          # unit tests: exporter (route filter, [Authorize] skip, header limits) + blog engine (front matter, posts)
+# library unit tests (exporter, blog engine) now run in kaizen-hq/Kaizen.Static
 
 python3 scripts/verify-output.py output            # serve output/ with python http.server, assert every referenced URL is HTTP 200
 python3 scripts/verify-seo.py output               # canonical / og / JSON-LD / sitemap / robots assertions

@@ -20,4 +20,4 @@ printf '@page "/boom"\n@code { protected override void OnInitialized() => throw 
 build; run check | grep -E '^\[|ERROR|LINK|FAIL|exit'
 rm -f $P/Components/Pages/Broken.razor $P/Components/Pages/Boom.razor
 echo; echo "=== D) reverted"; build; run check | grep -E '^\[|ERROR|LINK|FAIL|exit'
-echo; echo "=== E) auth filter: no auth-gated page exists in the site any more; the [Authorize]/[AllowAnonymous] skip logic is covered by tests/Kaizen.StaticSite.Tests (run: dotnet test tests/Kaizen.StaticSite.Tests)"
+echo; echo "=== E) auth filter: no auth-gated page exists in the site any more; the [Authorize]/[AllowAnonymous] skip logic is covered by Kaizen.StaticSite.Tests in https://github.com/kaizen-hq/Kaizen.Static"
