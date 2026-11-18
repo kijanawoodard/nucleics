@@ -6,8 +6,8 @@
   <ItemGroup>
     <!-- Kaizen libraries, published from https://github.com/kaizen-hq/Kaizen.Static (package IDs KaizenIO.*, namespaces Kaizen.*).
          Keep all three on the same version. Markdig and YamlDotNet now come in transitively through KaizenIO.BlogEngine. -->
-    <PackageVersion Include="KaizenIO.StaticSite" Version="0.1.0" />
-    <PackageVersion Include="KaizenIO.Seo" Version="0.1.0" />
-    <PackageVersion Include="KaizenIO.BlogEngine" Version="0.1.0" />
+    <PackageVersion Include="KaizenIO.StaticSite" Version="0.1.1" />
+    <PackageVersion Include="KaizenIO.Seo" Version="0.1.1" />
+    <PackageVersion Include="KaizenIO.BlogEngine" Version="0.1.1" />
   </ItemGroup>
 </Project>
